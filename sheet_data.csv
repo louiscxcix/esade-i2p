@@ -1,0 +1,18 @@
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,General,,Candiate Details,,,,,,Invoice Details,,,,,,,Payment Details,,,
+,,Invoice ID,Client Name,Position,Candidate Name,Start Date,Fix Salary,Variable Salary,Equity %,Invoice Date,Fee % ,Invoice Amount,Discount %,Net Invoice Amount,IVA / VAT,Gross Invoice Amount,Due Date,Status,Payment Date,# Days Oustanding
+,,1,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/04/2026,"€70,000.00",€0.00,1.00%,06/01/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",05/02/2026,Pending,,70
+,,2,Ventia Logistics S.L.,Founders Associate,Julie Hanna Sobczak,01/04/2026,"€65,000.00",€0.00,1.00%,04/02/2026,15.00%,"€9,750.00",0.00%,"€9,750.00","€2,047.50","€11,797.50",06/03/2026,Paid,28/02/2026,24
+,,3,Grupo Maresme S.A.,Product Manager,Simar Singh,01/04/2026,"€70,000.00",€0.00,0.00%,18/02/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",20/03/2026,Pending,,27
+,,4,Novapark Consultoría S.L.,GTM Manager,Louis Kim,01/04/2026,"€60,000.00","€20,000.00",0.00%,01/03/2026,15.00%,"€9,000.00",0.00%,"€9,000.00","€1,890.00","€10,890.00",31/03/2026,Pending,,16
+,,5,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/04/2026,"€70,000.00",€0.00,1.00%,08/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",07/04/2026,Pending,,9
+,,6,Solara Digital S.L.,Account Executive,Lena Müller,01/06/2026,"€50,000.00",€0.00,2.00%,20/05/2026,15.00%,"€7,500.00",0.00%,"€7,500.00","€1,575.00","€9,075.00",19/06/2026,Pending,,0
+,,7,Solara Digital S.L.,Customer Success Manager,Tim Tom,01/07/2026,"€50,000.00",€0.00,0.00%,11/06/2026,16.50%,"€8,250.00",0.00%,"€8,250.00","€1,732.50","€9,982.50",11/07/2026,Pending,,0
+,,8,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/04/2026,"€70,000.00",€0.00,1.00%,09/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",08/04/2026,Pending,,8
+,,9,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/04/2026,"€70,000.00",€0.00,1.00%,09/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",08/04/2026,Pending,,8
+,,10,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/04/2026,"€70,000.00",€0.00,1.00%,10/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",09/04/2026,Pending,,7
+,,11,Solara Digital S.L.,Chief of Staff,Lena Müller,01/04/2026,"€70,000.00",€0.00,1.00%,10/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",09/04/2026,Pending,,7
+,,12,Solara Digital S.L.,Chief of Staff,Anna Gawarecki,01/06/2026,"€70,000.00",€0.00,1.00%,11/03/2026,15.00%,"€10,500.00",0.00%,"€10,500.00","€2,205.00","€12,705.00",10/04/2026,Pending,,6
+,,13,Solara Digital S.L.,Founder,Santi Molins,01/07/2026,"€100,000.00",€0.00,1.00%,11/03/2026,15.00%,"€15,000.00",0.00%,"€15,000.00","€3,150.00","€18,150.00",10/04/2026,Pending,,6
+x,,,,,,,,,,,,,,,,,,,,
