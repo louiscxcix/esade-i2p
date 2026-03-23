@@ -61,7 +61,8 @@ def push_invoice_to_biloop(invoice_json):
     try:
         # NOTE: Biloop might wrap the body in a specific key, or accept it as a list.
         # Sending exactly the JSON schema we built earlier.
-        response = requests.post(url, json=invoice_json, headers=headers)
+        payload = {k: v for k, v in invoice_json.items() if not k.startswith('_')}
+        response = requests.post(url, json=payload, headers=headers)
         
         # Print for debugging
         print(f"Status Code: {response.status_code}")

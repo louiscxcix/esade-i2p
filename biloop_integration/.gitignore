@@ -1,0 +1,14 @@
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+
+# Secrets and Credentials
+credentials.json
+.streamlit/
+.env
+
+# MacOS
+.DS_Store
