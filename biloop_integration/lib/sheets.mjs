@@ -150,23 +150,18 @@ export async function fetchRawCSVText() {
 export async function updateInvoiceDates(updates) {
   const sheets = getSheetsClient();
 
-  const requests = updates.map(u => ({
-    updateCells: {
-      range: {
-        sheetId: parseInt(GID),
-        startRowIndex: u.row_index - 1,
-        endRowIndex: u.row_index,
-        startColumnIndex: 10, // Column K = index 10 (0-based)
-        endColumnIndex: 11,
-      },
-      rows: [{ values: [{ userEnteredValue: { stringValue: u.new_date } }] }],
-      fields: 'userEnteredValue',
-    },
+  // Use values.batchUpdate with USER_ENTERED so Sheets interprets dates properly
+  const data = updates.map(u => ({
+    range: `${WORKSHEET_NAME}!K${u.row_index}`,
+    values: [[u.new_date]],
   }));
 
-  await sheets.spreadsheets.batchUpdate({
+  await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: SHEET_ID,
-    requestBody: { requests },
+    requestBody: {
+      valueInputOption: 'USER_ENTERED',
+      data,
+    },
   });
 
   return { success: true, message: `Updated ${updates.length} date(s).` };
@@ -176,33 +171,38 @@ export async function updateInvoiceDates(updates) {
 export async function updateRowMargins(rowIndex, marginUpdates) {
   const sheets = getSheetsClient();
 
-  const requests = [];
+  // Convert 1-indexed sheetCol to column letter (e.g., 23 -> W, 34 -> AH)
+  function colToLetter(colNum) {
+    let letter = '';
+    while (colNum > 0) {
+      colNum--;
+      letter = String.fromCharCode(65 + (colNum % 26)) + letter;
+      colNum = Math.floor(colNum / 26);
+    }
+    return letter;
+  }
+
+  const data = [];
   for (const col of MARGIN_COLUMNS) {
     if (col.key in marginUpdates && marginUpdates[col.key] != null) {
-      requests.push({
-        updateCells: {
-          range: {
-            sheetId: parseInt(GID),
-            startRowIndex: rowIndex - 1,
-            endRowIndex: rowIndex,
-            startColumnIndex: col.sheetCol - 1, // convert 1-indexed to 0-indexed
-            endColumnIndex: col.sheetCol,
-          },
-          rows: [{ values: [{ userEnteredValue: { stringValue: String(marginUpdates[col.key]) } }] }],
-          fields: 'userEnteredValue',
-        },
+      data.push({
+        range: `${WORKSHEET_NAME}!${colToLetter(col.sheetCol)}${rowIndex}`,
+        values: [[String(marginUpdates[col.key])]],
       });
     }
   }
 
-  if (requests.length > 0) {
-    await sheets.spreadsheets.batchUpdate({
+  if (data.length > 0) {
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
-      requestBody: { requests },
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data,
+      },
     });
   }
 
-  return { success: true, message: `Updated ${requests.length} field(s).` };
+  return { success: true, message: `Updated ${data.length} field(s).` };
 }
 
 /** Create a new invoice row with auto-incrementing ID */
