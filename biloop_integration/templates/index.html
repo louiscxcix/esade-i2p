@@ -584,6 +584,9 @@
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
                         🔄 Refresh Data
                     </button>
+                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);">
+                        💾 Update Dates
+                    </button>
                     <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn">
                         ☁️ Upload to Biloop
                     </button>
@@ -608,7 +611,7 @@
                             <th>Proceso</th>
                             <th class="date-col-header">
                                 📅 Invoice Date
-                                <span class="date-hint">Click to edit → auto-saves</span>
+                                <span class="date-hint">Edit dates, then click Update Dates</span>
                             </th>
                             <th>Importe</th>
                             <th>Status</th>
@@ -846,8 +849,7 @@
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>
                 <td>
                     <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
-                           data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}"
-                           onchange="autoSaveDate(${index})">
+                           data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}">
                 </td>
                 <td class="currency">€${invoice['Importe Cobro'].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                 <td><span class="status-badge ${statusClass}" id="status-${index}">${statusLabel}</span></td>
@@ -866,42 +868,62 @@
         checkboxes.forEach(cb => cb.checked = source.checked);
     }
 
-    // Auto-save date when changed
-    async function autoSaveDate(index) {
-        const inputElement = document.getElementById(`date-${index}`);
-        const originalVal = inputElement.getAttribute('data-original');
-        const currentVal = inputElement.value;
-        const rowIdx = inputElement.getAttribute('data-row');
+    // Save all changed dates when user clicks Update Dates button
+    async function saveDates() {
+        const dateInputs = document.querySelectorAll('.date-input');
+        const updates = [];
         
-        if (!currentVal || currentVal === originalVal) return;
+        dateInputs.forEach(input => {
+            const originalVal = input.getAttribute('data-original');
+            const currentVal = input.value;
+            const rowIdx = input.getAttribute('data-row');
+            
+            if (currentVal && currentVal !== originalVal) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
+                const parts = currentVal.split('-');
+                let sheetDate = currentVal;
+                if (parts.length === 3) {
+                    sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                updates.push({ row_index: parseInt(rowIdx), new_date: sheetDate });
+            }
+        });
         
-        // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
-        const parts = currentVal.split('-');
-        let sheetDate = currentVal;
-        if (parts.length === 3) {
-            sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        if (updates.length === 0) {
+            showToast('No date changes to save.', 'error');
+            return;
         }
+        
+        const btn = document.getElementById('saveDatesBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Saving...';
         
         try {
             const response = await fetch('/api/update_dates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify([{ row_index: parseInt(rowIdx), new_date: sheetDate }])
+                body: JSON.stringify(updates)
             });
             const result = await response.json();
             
             if (response.ok && result.success) {
-                inputElement.setAttribute('data-original', currentVal);
-                showToast(`Date updated for row ${rowIdx}`);
+                // Mark all saved dates as the new originals
+                dateInputs.forEach(input => {
+                    input.setAttribute('data-original', input.value);
+                });
+                showToast(`${updates.length} date(s) updated successfully!`);
                 
                 // Refresh iframes
                 const sheetsIframe = document.querySelector('#sheetsView iframe');
                 if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
-                showToast('Failed to save date: ' + result.message, 'error');
+                showToast('Failed to save dates: ' + result.message, 'error');
             }
         } catch (error) {
             showToast('Failed to connect to server', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '💾 Update Dates';
         }
     }
 
