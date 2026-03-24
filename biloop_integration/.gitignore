@@ -5,10 +5,17 @@ ENV/
 env/
 __pycache__/
 
+# Node
+node_modules/
+
+# Netlify
+.netlify/
+
 # Secrets and Credentials
 credentials.json
 .streamlit/
 .env
+keys.env
 
 # MacOS
 .DS_Store

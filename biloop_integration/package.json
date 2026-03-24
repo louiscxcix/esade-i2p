@@ -1,0 +1,11 @@
+{
+  "name": "biloop-integration",
+  "version": "1.0.0",
+  "description": "Biloop Integration Dashboard deployed on Netlify",
+  "type": "module",
+  "dependencies": {
+    "googleapis": "^140.0.0",
+    "papaparse": "^5.4.1",
+    "@google/generative-ai": "^0.21.0"
+  }
+}

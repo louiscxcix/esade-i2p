@@ -1,0 +1,14 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "npm install"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["lib/**"]
+
+# Redirect SPA-style: serve index.html for root
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
