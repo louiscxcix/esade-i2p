@@ -27,12 +27,11 @@ def get_invoices():
 
 @app.route('/api/margins', methods=['GET'])
 def get_margins():
-    # Fetch live data from Google Sheets 2
-    df = google_sheets_fetcher.fetch_margin_sheets_data()
+    # Fetch margin data (columns W-AH) from Sheet 1
+    data = google_sheets_fetcher.fetch_margin_data_from_sheet1()
     
-    if df is not None:
-        json_data = google_sheets_fetcher.map_margin_json(df)
-        return jsonify(json_data)
+    if data is not None:
+        return jsonify(data)
     else:
         return jsonify({"error": "Failed to fetch margin data from Google Sheets."}), 500
 
@@ -83,16 +82,26 @@ def update_dates():
 def update_margin():
     data = request.json
     row_index = data.get('row_index')
-    factura_neta = data.get('factura_neta')
-    recruiter = data.get('recruiter')
-    margen_percent = data.get('margen_percent')
-    comision = data.get('comision')
-    margen_eur = data.get('margen_eur')
+    margin_updates = data.get('margin_updates', {})
     
     if not row_index:
         return jsonify({"success": False, "message": "No row index provided."}), 400
         
-    result = google_sheets_fetcher.update_row_margins(row_index, factura_neta, recruiter, margen_percent, comision, margen_eur)
+    result = google_sheets_fetcher.update_row_margins(row_index, margin_updates)
+    
+    if result.get("success"):
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route('/api/create_invoice', methods=['POST'])
+def create_invoice():
+    invoice_data = request.json
+    
+    if not invoice_data:
+        return jsonify({"success": False, "message": "No invoice data provided."}), 400
+        
+    result = google_sheets_fetcher.create_new_invoice(invoice_data)
     
     if result.get("success"):
         return jsonify(result)
@@ -117,7 +126,7 @@ def copilot_chat():
         
         # Build context from Google Sheets
         df_invoices = google_sheets_fetcher.fetch_google_sheets_data()
-        df_margins = google_sheets_fetcher.fetch_margin_sheets_data()
+        df_margins = google_sheets_fetcher.fetch_margin_data_from_sheet1()
         
         # Format as string
         context = "Here is the current Invoice Data:\n"
@@ -126,9 +135,10 @@ def copilot_chat():
         else:
              context += "No invoice data.\n"
              
-        context += "\nHere is the current Margin Data:\n"
-        if df_margins is not None and not df_margins.empty:
-             context += df_margins.to_csv(index=False)
+        context += "\nHere is the current Margin/Recruiter Data (Columns W-AH):\n"
+        if df_margins is not None and len(df_margins) > 0:
+             import json as json_mod
+             context += json_mod.dumps(df_margins[:50], indent=2)  # limit for context size
         else:
              context += "No margin data.\n"
              

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biloop Integration Dashboard</title>
-    <!-- Modern Font: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -21,6 +20,7 @@
             --error: #EF4444;
             --sidebar-width: 250px;
             --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --date-highlight: #2563EB;
         }
 
         body {
@@ -28,14 +28,13 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 0; /* Removed body padding for full-bleed layout */
+            padding: 0;
             box-sizing: border-box;
             display: flex;
             height: 100vh;
-            overflow: hidden; /* Prevent body scroll, handle scroll in main content */
+            overflow: hidden;
         }
 
-        /* Sidebar Styles */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
@@ -89,10 +88,9 @@
             background-color: rgba(245, 166, 35, 0.15);
             color: var(--primary);
             border-left: 3px solid var(--primary);
-            border-radius: 0 8px 8px 0; /* Adjust radius for left border */
+            border-radius: 0 8px 8px 0;
         }
 
-        /* Main Content Styles */
         .main-content {
             flex-grow: 1;
             display: flex;
@@ -102,7 +100,7 @@
         }
 
         .view-container {
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
             height: 100%;
             width: 100%;
@@ -112,7 +110,6 @@
             display: flex;
         }
 
-        /* Original App View Constraints */
         .app-view {
             padding: 40px;
             overflow-y: auto;
@@ -196,7 +193,17 @@
         }
 
         .btn-outline:hover {
-            background: rgba(79, 70, 229, 0.1);
+            background: rgba(245, 166, 35, 0.1);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background-color: #0d9668;
+            transform: translateY(-1px);
         }
         
         button:disabled {
@@ -222,17 +229,18 @@
 
         th {
             background-color: var(--primary);
-            padding: 16px;
-            font-size: 0.95rem;
+            padding: 14px 12px;
+            font-size: 0.85rem;
             font-weight: 600;
             color: #FFFFFF;
             border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
         }
 
         td {
-            padding: 16px;
+            padding: 12px;
             border-bottom: 1px solid var(--border-color);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             vertical-align: middle;
         }
 
@@ -298,7 +306,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Checkbox Styling */
         .checkbox-wrapper {
             display: flex;
             align-items: center;
@@ -341,12 +348,194 @@
             transform: scale(1);
         }
         
-        /* Iframe styling */
         .iframe-container {
             width: 100%;
             height: 100%;
             border: none;
-            background-color: #fff; /* Most external tools imply white background */
+            background-color: #fff;
+        }
+
+        /* Date column highlight */
+        .date-col-header {
+            background-color: var(--date-highlight) !important;
+            position: relative;
+        }
+
+        .date-col-header .date-hint {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .date-input {
+            background: rgba(37, 99, 235, 0.08) !important;
+            border: 1px solid rgba(37, 99, 235, 0.4) !important;
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 140px;
+        }
+
+        .date-input:hover {
+            border-color: var(--date-highlight) !important;
+            background: rgba(37, 99, 235, 0.15) !important;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: var(--date-highlight) !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Margin table editable cells */
+        .margin-input {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            width: 100%;
+            min-width: 80px;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+
+        .margin-input:hover {
+            border-color: var(--border-color);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .margin-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(245,166,35,0.05);
+        }
+
+        .margin-save-btn {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .margin-save-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .margin-save-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            margin: 0 0 24px 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-field {
+            margin-bottom: 16px;
+        }
+
+        .modal-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .modal-field input, .modal-field select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+
+        .modal-field input:focus {
+            border-color: var(--primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .toast.success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .toast.error {
+            background: var(--error);
+            color: #fff;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
     </style>
@@ -363,13 +552,10 @@
             📄 Invoices Upload
         </div>
         <div class="nav-item" onclick="switchView('marginView', this)">
-            🧮 Margin Calculator
+            📊 Margin Management
         </div>
         <div class="nav-item" onclick="switchView('sheetsView', this)">
-            📊 Google Sheets
-        </div>
-        <div class="nav-item" onclick="switchView('sheetsView2', this)">
-            📊 Google Sheets 2
+            📋 Google Sheets
         </div>
         <div class="nav-item" onclick="switchView('lookerView', this)">
             📈 Looker Studio
@@ -383,7 +569,7 @@
 <!-- Main Content Area -->
 <div class="main-content">
 
-    <!-- View 1: Native App -->
+    <!-- View 1: Invoice Upload -->
     <div id="appView" class="view-container app-view active">
         <div class="container">
             <header>
@@ -392,11 +578,11 @@
                     <p style="color: var(--text-muted); margin-top: 8px;">Live sync from Google Sheets to Biloop API</p>
                 </div>
                 <div class="header-actions">
+                    <button class="btn-success" onclick="openNewInvoiceModal()">
+                        ➕ New Invoice
+                    </button>
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
                         🔄 Refresh Data
-                    </button>
-                    <button class="btn-primary" onclick="saveDates()" id="saveBtn">
-                        💾 Save Dates
                     </button>
                     <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn">
                         ☁️ Upload to Biloop
@@ -420,90 +606,84 @@
                             <th>Cliente</th>
                             <th>Candidato</th>
                             <th>Proceso</th>
-                            <th>Fecha Factura</th>
+                            <th class="date-col-header">
+                                📅 Invoice Date
+                                <span class="date-hint">Click to edit → auto-saves</span>
+                            </th>
                             <th>Importe</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <!-- Rows injected via JS -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- View 4: Margin Calculator -->
+    <!-- View 2: Margin Management -->
     <div id="marginView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
-                    <h1>Margin Calculator</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Calculate and update Recruiter margins inline</p>
+                    <h1>Margin Management</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Edit recruiter & margin data (Columns W-AH) directly from Sheet 1</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn-primary" onclick="updateMargin()" id="updateMarginBtn">
-                        💾 Update in Sheets
+                    <button class="btn-success" onclick="openNewInvoiceModal()">
+                        ➕ New Invoice
+                    </button>
+                    <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
+                        🔄 Refresh
                     </button>
                 </div>
             </header>
-            
-            <div class="table-container" style="padding: 24px;">
-                <div style="margin-bottom: 24px;">
-                    <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 500;">Select Invoice</label>
-                    <select id="invoiceSelect" onchange="loadInvoiceData()" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;">
-                        <option value="">-- Choose an Invoice --</option>
-                    </select>
-                </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">ID Factura</label>
-                        <input type="text" id="marginIdFactura" disabled style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Recruiter (AE)</label>
-                        <input type="text" id="marginRecruiter" oninput="calculateMargin()" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box; outline: none; transition: var(--transition);">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Factura Neta (P) [€]</label>
-                        <input type="number" id="marginFacturaNeta" oninput="calculateMargin()" step="0.01" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Margen % (AF) <small>[e.g. 0.15 for 15%]</small></label>
-                        <input type="number" id="marginPercent" oninput="calculateMargin()" step="0.001" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Comisión Recr (AG) [€] <small>=IF(AE=0,0,(1-AF)*P)</small></label>
-                        <input type="number" id="marginComision" step="0.01" oninput="calculateMargin(true)" style="width: 100%; padding: 12px; background: rgba(245,166,35,0.05); border: 1px solid var(--primary); color: var(--text-main); border-radius: 8px; box-sizing: border-box; outline: none;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Margen (AH) [€] <small>=P-AG</small></label>
-                        <input type="number" id="marginEur" disabled style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-weight: bold;">
-                    </div>
+            <div class="table-container">
+                <div id="marginLoader" class="loader">
+                    <div class="spinner"></div>
                 </div>
+                
+                <table id="marginTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Invoice ID</th>
+                            <th>Client</th>
+                            <th>Candidate</th>
+                            <th>Recruiter Name</th>
+                            <th>Margin</th>
+                            <th>Recruiter Comm.</th>
+                            <th>Collected</th>
+                            <th>Invoice</th>
+                            <th>Recr. Invoice ID</th>
+                            <th>Invoice Date</th>
+                            <th>Due Date</th>
+                            <th>VAT</th>
+                            <th>IRPF</th>
+                            <th>Gross Amount</th>
+                            <th>Pay Status</th>
+                            <th style="width: 80px;">Save</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marginTableBody">
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- View 2: Google Sheets -->
+    <!-- View 3: Google Sheets -->
     <div id="sheetsView" class="view-container">
-        <!-- Google Sheet URL from frontend -->
         <iframe class="iframe-container" src="https://docs.google.com/spreadsheets/d/15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk/edit?gid=0&usp=sharing&widget=true&headers=false"></iframe>
     </div>
 
-    <!-- View 5: Google Sheets 2 -->
-    <div id="sheetsView2" class="view-container">
-        <iframe class="iframe-container" src="https://docs.google.com/spreadsheets/d/1Wu_T84la4oqEcXthSZusUblmpF7lUZCSepBvjH2e48I/edit?gid=1105355662&usp=sharing&widget=true&headers=false"></iframe>
-    </div>
-
-    <!-- View 3: Looker Studio -->
+    <!-- View 4: Looker Studio -->
     <div id="lookerView" class="view-container">
         <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_s33znkum1d" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
     </div>
 
-    <!-- View 6: Co-pilot -->
+    <!-- View 5: Co-pilot -->
     <div id="copilotView" class="view-container app-view">
         <div class="container">
             <header>
@@ -528,38 +708,73 @@
 
 </div>
 
+<!-- New Invoice Modal -->
+<div id="newInvoiceModal" class="modal-overlay">
+    <div class="modal">
+        <h2>➕ Create New Invoice</h2>
+        <div class="modal-field">
+            <label>Client Name *</label>
+            <input type="text" id="newClientName" placeholder="e.g. ACME Corp">
+        </div>
+        <div class="modal-field">
+            <label>Position</label>
+            <input type="text" id="newPosition" placeholder="e.g. Senior Developer">
+        </div>
+        <div class="modal-field">
+            <label>Candidate Name *</label>
+            <input type="text" id="newCandidateName" placeholder="e.g. John Doe">
+        </div>
+        <div class="modal-field">
+            <label>Start Date</label>
+            <input type="date" id="newStartDate">
+        </div>
+        <div class="modal-field">
+            <label>Fix Salary (€)</label>
+            <input type="number" id="newFixSalary" step="0.01" placeholder="e.g. 50000">
+        </div>
+        <div class="modal-field">
+            <label>Invoice Date</label>
+            <input type="date" id="newInvoiceDate">
+        </div>
+        <div class="modal-field">
+            <label>Fee %</label>
+            <input type="text" id="newFeePercent" placeholder="e.g. 20%">
+        </div>
+        <div class="modal-field">
+            <label>Invoice Amount (€)</label>
+            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="e.g. 10000">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancel</button>
+            <button class="btn-primary" onclick="submitNewInvoice()" id="createInvoiceBtn">Create Invoice</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Navigation Logic
+    // ===== Navigation =====
     function switchView(viewId, element) {
-        // Update Active Nav Item
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
 
-        // Update Active View Container
         document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
     }
 
-    // Existing App Logic
+    // ===== Toast Notifications =====
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+    }
+
+    // ===== Shared Data =====
     let globalData = [];
     let marginData = [];
 
-    async function fetchMarginData() {
-        try {
-            const response = await fetch('/api/margins');
-            const data = await response.json();
-            if (response.ok) {
-                marginData = data;
-                document.getElementById('updateMarginBtn').disabled = false;
-                populateInvoiceSelect();
-            } else {
-                console.error('Error fetching margins:', data.error);
-            }
-        } catch (error) {
-            console.error('Failed to fetch margins:', error);
-        }
-    }
-
+    // ===== Invoice Upload Logic =====
     async function fetchData() {
         const loader = document.getElementById('loader');
         const table = document.getElementById('invoiceTable');
@@ -632,7 +847,7 @@
                 <td>
                     <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
                            data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}"
-                           style="background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 4px 8px; border-radius: 4px; font-family: inherit;">
+                           onchange="autoSaveDate(${index})">
                 </td>
                 <td class="currency">€${invoice['Importe Cobro'].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                 <td><span class="status-badge ${statusClass}" id="status-${index}">${statusLabel}</span></td>
@@ -649,6 +864,45 @@
     function toggleAll(source) {
         const checkboxes = document.querySelectorAll('.row-checkbox');
         checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    // Auto-save date when changed
+    async function autoSaveDate(index) {
+        const inputElement = document.getElementById(`date-${index}`);
+        const originalVal = inputElement.getAttribute('data-original');
+        const currentVal = inputElement.value;
+        const rowIdx = inputElement.getAttribute('data-row');
+        
+        if (!currentVal || currentVal === originalVal) return;
+        
+        // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
+        const parts = currentVal.split('-');
+        let sheetDate = currentVal;
+        if (parts.length === 3) {
+            sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        try {
+            const response = await fetch('/api/update_dates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify([{ row_index: parseInt(rowIdx), new_date: sheetDate }])
+            });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                inputElement.setAttribute('data-original', currentVal);
+                showToast(`Date updated for row ${rowIdx}`);
+                
+                // Refresh iframes
+                const sheetsIframe = document.querySelector('#sheetsView iframe');
+                if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
+            } else {
+                showToast('Failed to save date: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to connect to server', 'error');
+        }
     }
 
     async function uploadInvoice(index) {
@@ -678,93 +932,16 @@
                 statusBadge.innerText = 'Failed ✗';
                 btn.disabled = false;
                 btn.innerText = 'Retry';
-                console.error("Upload failed:", result.message);
             }
         } catch (error) {
             statusBadge.className = 'status-badge error';
             statusBadge.innerText = 'Error ✗';
             btn.disabled = false;
-            console.error("Network error:", error);
         }
     }
 
     function uploadSingle(index) {
         uploadInvoice(index);
-    }
-
-    async function saveDates() {
-        const updates = [];
-        globalData.forEach((invoice, index) => {
-            const inputElement = document.getElementById(`date-${index}`);
-            const originalVal = inputElement.getAttribute('data-original');
-            const currentVal = inputElement.value;
-            const rowIdx = inputElement.getAttribute('data-row');
-            
-            if (currentVal && currentVal !== originalVal) {
-                // Convert YYYY-MM-DD back to DD/MM/YYYY for the sheet
-                const parts = currentVal.split('-');
-                let sheetFormattedDate = currentVal;
-                if (parts.length === 3) {
-                    sheetFormattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                }
-                
-                updates.push({
-                    row_index: parseInt(rowIdx),
-                    new_date: sheetFormattedDate
-                });
-            }
-        });
-
-        if (updates.length === 0) {
-            alert("No dates were modified.");
-            return;
-        }
-
-        const saveBtn = document.getElementById('saveBtn');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerText = 'Saving...';
-        saveBtn.disabled = true;
-
-        try {
-            const response = await fetch('/api/update_dates', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                alert(result.message);
-                // Refresh data to show changes and reset 'original' state
-                await fetchData();
-                
-                // Refresh Looker Studio iframe completely
-                const lookerIframe = document.querySelector('#lookerView iframe');
-                if (lookerIframe) {
-                    lookerIframe.src = lookerIframe.src;
-                }
-                
-                // Refresh Google Sheets iframe completely
-                const sheetsIframe = document.querySelector('#sheetsView iframe');
-                if (sheetsIframe) {
-                    sheetsIframe.src = sheetsIframe.src;
-                }
-                // Duplicate Google Sheets iframe refresh
-                const sheetsIframe2 = document.querySelector('#sheetsView2 iframe');
-                if (sheetsIframe2) {
-                    sheetsIframe2.src = sheetsIframe2.src;
-                }
-            } else {
-                alert('Error processing updates: ' + result.message);
-            }
-        } catch (error) {
-            console.error('Failed to save dates:', error);
-            alert('Failed to connect to server when saving.');
-        } finally {
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
-        }
     }
 
     async function uploadSelected() {
@@ -780,11 +957,9 @@
         const originalText = uploadBtn.innerHTML;
         uploadBtn.innerHTML = 'Uploading...';
         
-        // Upload sequentially to not overwhelm the API
         for (let i = 0; i < checkboxes.length; i++) {
             const index = checkboxes[i].value;
             await uploadInvoice(index);
-            // Optionally uncheck after success
             if(document.getElementById(`status-${index}`).className.includes('success')) {
                 checkboxes[i].checked = false;
             }
@@ -795,103 +970,156 @@
         document.getElementById('selectAll').checked = false;
     }
 
-    // Margin Page Logic
-    function populateInvoiceSelect() {
-        const select = document.getElementById('invoiceSelect');
-        select.innerHTML = '<option value="">-- Choose an Invoice --</option>';
-        marginData.forEach((inv, i) => {
-            const idFactura = inv._id_factura || `Row ${inv._sheet_row_index}`;
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = `${idFactura} - ${inv.Cliente} (${inv.Candidato})`;
-            select.appendChild(opt);
+    // ===== Margin Management Logic =====
+    async function fetchMarginData() {
+        const loader = document.getElementById('marginLoader');
+        const table = document.getElementById('marginTable');
+        const tbody = document.getElementById('marginTableBody');
+        
+        loader.style.display = 'flex';
+        table.style.display = 'none';
+        tbody.innerHTML = '';
+
+        try {
+            const response = await fetch('/api/margins');
+            const data = await response.json();
+            if (response.ok && !data.error) {
+                marginData = data;
+                renderMarginTable(data);
+                table.style.display = 'table';
+            } else {
+                console.error('Error fetching margins:', data.error);
+            }
+        } catch (error) {
+            console.error('Failed to fetch margins:', error);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    const MARGIN_KEYS = [
+        'Recruiter Name', 'Margin', 'Recruiter Commission', 'Collected by BT',
+        'Invoice', 'Recruiter Invoice ID', 'Invoice Date (Recruiter)',
+        'Due Date (Recruiter)', 'VAT', 'IRPF',
+        'Gross Invoice Amount (Recruiter)', 'Payment Status'
+    ];
+
+    function renderMarginTable(data) {
+        const tbody = document.getElementById('marginTableBody');
+        tbody.innerHTML = '';
+
+        data.forEach((record, index) => {
+            const tr = document.createElement('tr');
+            
+            // Read-only context columns
+            let html = `
+                <td style="font-weight: 600; color: var(--primary); white-space: nowrap;">${record._invoice_id}</td>
+                <td style="white-space: nowrap;">${record._client_name}</td>
+                <td style="white-space: nowrap;">${record._candidate_name}</td>
+            `;
+            
+            // Editable margin columns
+            MARGIN_KEYS.forEach(key => {
+                const val = record[key] || '';
+                html += `<td><input class="margin-input" data-row="${index}" data-key="${key}" value="${val.replace(/"/g, '&quot;')}"></td>`;
+            });
+            
+            // Save button
+            html += `<td><button class="margin-save-btn" onclick="saveMarginRow(${index})" id="marginSaveBtn-${index}">💾</button></td>`;
+            
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
         });
     }
 
-    function loadInvoiceData() {
-        const select = document.getElementById('invoiceSelect');
-        const i = select.value;
-        if (!i) {
-            ['marginIdFactura', 'marginRecruiter', 'marginFacturaNeta', 'marginPercent', 'marginComision', 'marginEur'].forEach(id => document.getElementById(id).value = '');
-            return;
-        }
-        
-        const inv = marginData[i];
-        document.getElementById('marginIdFactura').value = inv._id_factura || '';
-        document.getElementById('marginRecruiter').value = inv._recruiter || '';
-        
-        let facturaNeta = inv['Factura neta'];
-        if(typeof facturaNeta !== 'number') facturaNeta = parseFloat(String(facturaNeta).replace(/[€\s,]/g, '')) || 0;
-        document.getElementById('marginFacturaNeta').value = facturaNeta;
-        
-        let mPercentRaw = 0;
-        let mStr = inv._margen_percent || '';
-        if (mStr.includes('%')) {
-            mPercentRaw = parseFloat(mStr.replace('%', '')) / 100.0;
-        } else {
-            mPercentRaw = parseFloat(mStr) || 0;
-            if(mPercentRaw > 1 && !mStr.includes('.')) mPercentRaw /= 100; // naive string fallback
-        }
-        document.getElementById('marginPercent').value = isNaN(mPercentRaw) ? 0 : mPercentRaw;
-        
-        let comision = inv._comision_recr;
-        if(typeof comision !== 'number') comision = parseFloat(String(comision).replace(/[€\s,]/g, '')) || 0;
-        document.getElementById('marginComision').value = comision.toFixed(2);
-        
-        let margenEur = inv._margen_eur;
-        if(typeof margenEur !== 'number') margenEur = parseFloat(String(margenEur).replace(/[€\s,]/g, '')) || 0;
-        document.getElementById('marginEur').value = margenEur.toFixed(2);
-        
-        // Ensure values align with formulas right away
-        calculateMargin();
-    }
-
-    function calculateMargin(manualComision = false) {
-        const recruiter = document.getElementById('marginRecruiter').value.trim();
-        const p = parseFloat(document.getElementById('marginFacturaNeta').value) || 0;
-        const af = parseFloat(document.getElementById('marginPercent').value) || 0;
-        
-        let comision = 0;
-        if (!manualComision) {
-            if (!recruiter || recruiter === '0') {
-                comision = 0;
-            } else {
-                comision = (1 - af) * p;
-            }
-            document.getElementById('marginComision').value = comision.toFixed(2);
-        } else {
-            comision = parseFloat(document.getElementById('marginComision').value) || 0;
-        }
-        
-        const margen = p - comision;
-        document.getElementById('marginEur').value = margen.toFixed(2);
-    }
-
-    async function updateMargin() {
-        const select = document.getElementById('invoiceSelect');
-        const i = select.value;
-        if (!i) {
-            alert('Please select an invoice first.');
-            return;
-        }
-        
-        const inv = marginData[i];
-        const btn = document.getElementById('updateMarginBtn');
-        const originalText = btn.innerHTML;
+    async function saveMarginRow(index) {
+        const record = marginData[index];
+        const btn = document.getElementById(`marginSaveBtn-${index}`);
         btn.disabled = true;
-        btn.innerHTML = 'Updating...';
+        btn.textContent = '...';
         
-        const payload = {
-            row_index: inv._sheet_row_index,
-            factura_neta: parseFloat(document.getElementById('marginFacturaNeta').value) || 0,
-            recruiter: document.getElementById('marginRecruiter').value,
-            margen_percent: parseFloat(document.getElementById('marginPercent').value) || 0,
-            comision: parseFloat(document.getElementById('marginComision').value) || 0,
-            margen_eur: parseFloat(document.getElementById('marginEur').value) || 0
-        };
+        // Collect all input values for this row
+        const marginUpdates = {};
+        const inputs = document.querySelectorAll(`input.margin-input[data-row="${index}"]`);
+        inputs.forEach(input => {
+            marginUpdates[input.dataset.key] = input.value;
+        });
         
         try {
             const response = await fetch('/api/update_margin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    row_index: record._sheet_row_index,
+                    margin_updates: marginUpdates
+                })
+            });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showToast(`Row ${record._invoice_id} updated!`);
+                btn.textContent = '✓';
+                setTimeout(() => { btn.textContent = '💾'; btn.disabled = false; }, 1500);
+            } else {
+                showToast('Update failed: ' + result.message, 'error');
+                btn.textContent = '💾';
+                btn.disabled = false;
+            }
+        } catch (error) {
+            showToast('Server connection failed', 'error');
+            btn.textContent = '💾';
+            btn.disabled = false;
+        }
+    }
+
+    // ===== New Invoice Modal =====
+    function openNewInvoiceModal() {
+        document.getElementById('newInvoiceModal').classList.add('active');
+    }
+
+    function closeNewInvoiceModal() {
+        document.getElementById('newInvoiceModal').classList.remove('active');
+        // Clear fields
+        ['newClientName','newPosition','newCandidateName','newStartDate','newFixSalary','newInvoiceDate','newFeePercent','newInvoiceAmount'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+    }
+
+    async function submitNewInvoice() {
+        const clientName = document.getElementById('newClientName').value.trim();
+        const candidateName = document.getElementById('newCandidateName').value.trim();
+        
+        if (!clientName || !candidateName) {
+            alert('Client Name and Candidate Name are required.');
+            return;
+        }
+        
+        const btn = document.getElementById('createInvoiceBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+        
+        // Convert dates from YYYY-MM-DD to DD/MM/YYYY
+        function formatDate(val) {
+            if (!val) return '';
+            const parts = val.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return val;
+        }
+        
+        const payload = {
+            client_name: clientName,
+            position: document.getElementById('newPosition').value.trim(),
+            candidate_name: candidateName,
+            start_date: formatDate(document.getElementById('newStartDate').value),
+            fix_salary: document.getElementById('newFixSalary').value,
+            invoice_date: formatDate(document.getElementById('newInvoiceDate').value),
+            fee_percent: document.getElementById('newFeePercent').value,
+            invoice_amount: document.getElementById('newInvoiceAmount').value,
+            status: 'Pending'
+        };
+        
+        try {
+            const response = await fetch('/api/create_invoice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -899,33 +1127,26 @@
             const result = await response.json();
             
             if (response.ok && result.success) {
-                alert('Margin updated successfully!');
-                await fetchMarginData();
-                
-                // Keep the selection active
-                setTimeout(() => {
-                    document.getElementById('invoiceSelect').value = i;
-                    loadInvoiceData();
-                }, 500);
+                showToast(`Invoice ${result.invoice_id} created!`);
+                closeNewInvoiceModal();
+                // Refresh both pages
+                fetchData();
+                fetchMarginData();
+                // Refresh Google Sheets iframe
+                const sheetsIframe = document.querySelector('#sheetsView iframe');
+                if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
-                alert('Failed to update: ' + result.message);
+                showToast('Failed: ' + result.message, 'error');
             }
         } catch (error) {
-            console.error(error);
-            alert('Failed to connect to server.');
+            showToast('Server connection failed', 'error');
         } finally {
-            btn.innerHTML = originalText;
             btn.disabled = false;
+            btn.textContent = 'Create Invoice';
         }
     }
 
-    // Load data automatically on start
-    document.addEventListener("DOMContentLoaded", () => {
-        fetchData();
-        fetchMarginData();
-    });
-
-    // Co-pilot Logic
+    // ===== Co-pilot Logic =====
     let chatHistoryArr = [];
 
     async function sendMessage() {
@@ -933,7 +1154,6 @@
         const userText = inputStr.value.trim();
         if (!userText) return;
         
-        // Add user message to UI
         appendMessage(userText, 'user');
         inputStr.value = '';
         
@@ -950,16 +1170,13 @@
             const data = await response.json();
             
             if (response.ok && data.success) {
-                // Add AI message to UI
                 appendMessage(data.reply, 'model');
-                // Update history payload for next time
                 chatHistoryArr.push({ role: 'user', content: userText });
                 chatHistoryArr.push({ role: 'model', content: data.reply });
             } else {
                 appendMessage('Error: ' + data.message, 'error');
             }
         } catch (error) {
-            console.error('Copilot err:', error);
             appendMessage('Failed to reach the AI server.', 'error');
         } finally {
             sendBtn.disabled = false;
@@ -992,7 +1209,6 @@
             msgDiv.style.alignSelf = 'flex-start';
         }
         
-        // Basic markdown formatting (bold, newlines handled by pre-wrap)
         let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         msgDiv.innerHTML = formattedText;
         
@@ -1006,8 +1222,12 @@
         }
     }
 
+    // ===== Init =====
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchData();
+        fetchMarginData();
+    });
 </script>
 
 </body>
 </html>
-
