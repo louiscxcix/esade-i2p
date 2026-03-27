@@ -84,22 +84,47 @@ async function fetchCSV() {
 
 /** Fetch invoice data and map to Biloop JSON schema */
 export async function fetchInvoiceData() {
-  const rows = await fetchCSV();
-  return rows.map((row, index) => ({
-    Cliente: (row['Client Name'] || '').trim(),
-    Proceso: (row['Position'] || '').trim(),
-    Candidato: (row['Candidate Name'] || '').trim(),
-    'Fecha Factura': (row['Invoice Date'] || '').trim(),
-    Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
-    Salario: cleanCurrency(row['Fix Salary'] || 0),
-    'Importe factura': cleanCurrency(row['Invoice Amount'] || 0),
-    'Descuento (%)': cleanPercentage(row['Discount %'] || 0),
-    'Factura neta': cleanCurrency(row['Net Invoice Amount'] || 0),
-    IVA: cleanCurrency(row['IVA / VAT'] || 0),
-    'Importe Cobro': cleanCurrency(row['Gross Invoice Amount'] || 0),
-    Status: (row['Status'] || '').trim(),
-    _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
-  }));
+  // We need raw cell access for column T (Estimated Payment Date, csvIdx 19)
+  const response = await fetch(CSV_URL);
+  if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
+  const text = await response.text();
+  const lines = text.split('\n');
+  const csvWithoutPreamble = lines.slice(3).join('\n');
+  const parsed = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
+  if (parsed.meta && parsed.meta.fields) {
+    parsed.data = parsed.data.map(row => {
+      const newRow = {};
+      for (const [key, val] of Object.entries(row)) {
+        newRow[key.trim()] = val;
+      }
+      return newRow;
+    });
+  }
+  const rows = parsed.data.filter(row => row['Invoice ID'] && String(row['Invoice ID']).trim() !== '');
+
+  return rows.map((row, index) => {
+    // Access col T (Estimated Payment Date) by index from the raw line
+    const dataLine = lines[index + 4]; // 3 preamble + 1 header + data start
+    const rowCells = Papa.parse(dataLine, { header: false }).data[0] || [];
+    const estPayDate = rowCells[19] ? String(rowCells[19]).trim() : ''; // col T = index 19
+
+    return {
+      Cliente: (row['Client Name'] || '').trim(),
+      Proceso: (row['Position'] || '').trim(),
+      Candidato: (row['Candidate Name'] || '').trim(),
+      'Fecha Factura': (row['Invoice Date'] || '').trim(),
+      Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
+      Salario: cleanCurrency(row['Fix Salary'] || 0),
+      'Importe factura': cleanCurrency(row['Invoice Amount'] || 0),
+      'Descuento (%)': cleanPercentage(row['Discount %'] || 0),
+      'Factura neta': cleanCurrency(row['Net Invoice Amount'] || 0),
+      IVA: cleanCurrency(row['IVA / VAT'] || 0),
+      'Importe Cobro': cleanCurrency(row['Gross Invoice Amount'] || 0),
+      Status: (row['Status'] || '').trim(),
+      'Estimated Payment Date': estPayDate,
+      _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
+    };
+  });
 }
 
 /** Fetch margin data (columns W-AH) from Sheet 1 */
@@ -165,6 +190,40 @@ export async function updateInvoiceDates(updates) {
   });
 
   return { success: true, message: `Updated ${updates.length} date(s).` };
+}
+
+/** Update status and/or estimated payment date for an invoice row */
+export async function updateInvoiceFields(updates) {
+  const sheets = getSheetsClient();
+  // updates: array of { row_index, status?, est_payment_date? }
+  const data = [];
+
+  for (const u of updates) {
+    if (u.status != null) {
+      data.push({
+        range: `${WORKSHEET_NAME}!S${u.row_index}`,
+        values: [[u.status]],
+      });
+    }
+    if (u.est_payment_date != null) {
+      data.push({
+        range: `${WORKSHEET_NAME}!T${u.row_index}`,
+        values: [[u.est_payment_date]],
+      });
+    }
+  }
+
+  if (data.length > 0) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data,
+      },
+    });
+  }
+
+  return { success: true, message: `Updated ${data.length} field(s).` };
 }
 
 /** Update margin columns (W-AH) for a specific row */

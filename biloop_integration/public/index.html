@@ -393,6 +393,80 @@
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
         }
 
+        /* Est. Payment Date column */
+        .est-date-col-header {
+            background-color: #7C3AED !important;
+            position: relative;
+        }
+
+        .est-date-col-header .date-hint {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .est-date-input {
+            background: rgba(124, 58, 237, 0.08) !important;
+            border: 1px solid rgba(124, 58, 237, 0.4) !important;
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 140px;
+        }
+
+        .est-date-input:hover {
+            border-color: #7C3AED !important;
+            background: rgba(124, 58, 237, 0.15) !important;
+        }
+
+        .est-date-input:focus {
+            outline: none;
+            border-color: #7C3AED !important;
+            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+        }
+
+        /* Editable status select */
+        .status-select {
+            appearance: none;
+            background: rgba(148, 163, 184, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: var(--text-muted);
+            padding: 4px 28px 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a0a0a0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        .status-select.paid {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: var(--success);
+        }
+
+        .status-select.overdue {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: var(--error);
+        }
+
+        .status-select.pending {
+            background-color: rgba(245, 166, 35, 0.1);
+            border-color: rgba(245, 166, 35, 0.4);
+            color: var(--primary);
+        }
+
         /* Margin table editable cells */
         .margin-input {
             background: transparent;
@@ -441,7 +515,39 @@
             cursor: not-allowed;
         }
 
-        /* Modal */
+        /* Margin key calculation columns */
+        .margin-key-col-header {
+            background-color: var(--date-highlight) !important;
+            position: relative;
+        }
+
+        .margin-key-col-header .date-hint {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .margin-input-key {
+            background: rgba(37, 99, 235, 0.08) !important;
+            border: 1px solid rgba(37, 99, 235, 0.3) !important;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .margin-input-key:hover {
+            border-color: var(--date-highlight) !important;
+            background: rgba(37, 99, 235, 0.15) !important;
+        }
+
+        .margin-input-key:focus {
+            outline: none;
+            border-color: var(--date-highlight) !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+        }
+
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -523,19 +629,163 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
-        .toast.success {
-            background: var(--success);
-            color: #fff;
-        }
-
-        .toast.error {
-            background: var(--error);
-            color: #fff;
-        }
+        .toast.success { background: var(--success); color: #fff; }
+        .toast.error   { background: var(--error);   color: #fff; }
 
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 24px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sidebar-tagline {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.3);
+            margin-top: 4px;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 140px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover { border-color: rgba(255,255,255,0.15); }
+
+        .stat-card-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .stat-card-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .stat-card.paid   .stat-card-value { color: var(--success); }
+        .stat-card.overdue .stat-card-value { color: var(--error); }
+        .stat-card.pending .stat-card-value { color: var(--primary); }
+
+        /* Workflow hint banner */
+        .workflow-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            background: rgba(37, 99, 235, 0.06);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .workflow-hint .steps {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .hint-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .hint-step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--date-highlight);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Tip banner */
+        .tip-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(245, 166, 35, 0.07);
+            border: 1px solid rgba(245, 166, 35, 0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        /* Loading text label */
+        .loader-label {
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Example prompt chips */
+        .chip-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            border-radius: 9999px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .chip:hover {
+            background: rgba(245, 166, 35, 0.12);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
         }
 
     </style>
@@ -546,24 +796,26 @@
 <div class="sidebar">
     <div class="sidebar-header">
         <h2>Biloop Hub</h2>
+        <p class="sidebar-tagline">Recruitment Finance Platform</p>
     </div>
     <div class="nav-menu">
         <div class="nav-item active" onclick="switchView('appView', this)">
-            📄 Invoices Upload
+            📄 My Invoices
         </div>
         <div class="nav-item" onclick="switchView('marginView', this)">
-            📊 Margin Management
+            💰 Recruiter Margins
         </div>
         <div class="nav-item" onclick="switchView('sheetsView', this)">
-            📋 Google Sheets
+            📋 Raw Data (Sheet)
         </div>
         <div class="nav-item" onclick="switchView('lookerView', this)">
-            📈 Looker Studio
+            📊 Analytics Dashboard
         </div>
         <div class="nav-item" onclick="switchView('copilotView', this)">
-            🤖 Co-pilot
+            ✨ Smart Assistant
         </div>
     </div>
+    <div class="sidebar-footer">ESADE i2P &middot; v1.0</div>
 </div>
 
 <!-- Main Content Area -->
@@ -574,28 +826,65 @@
         <div class="container">
             <header>
                 <div>
-                    <h1>Invoices Dashboard</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Live sync from Google Sheets to Biloop API</p>
+                    <h1>My Invoices</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Review and manage your placement invoices</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
                         ➕ New Invoice
                     </button>
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
-                        🔄 Refresh Data
+                        🔄 Refresh
                     </button>
-                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);">
-                        💾 Update Dates
+                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);" title="Save any invoice date changes you made in the table">
+                        💾 Save Invoice Dates
                     </button>
-                    <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn">
-                        ☁️ Upload to Biloop
+                    <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Save any status or estimated payment date changes">
+                        ✏️ Save Changes
+                    </button>
+                    <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn" title="Only sends the checked (☑) invoices to Biloop">
+                        ☁️ Send to Biloop
                     </button>
                 </div>
             </header>
 
+            <!-- Stats bar -->
+            <div class="stats-bar" id="statsBar" style="display:none;">
+                <div class="stat-card">
+                    <span class="stat-card-label">📊 Total Invoices</span>
+                    <span class="stat-card-value" id="statTotal">—</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card-label">💶 Total Amount</span>
+                    <span class="stat-card-value" id="statAmount">—</span>
+                </div>
+                <div class="stat-card paid">
+                    <span class="stat-card-label">✅ Paid</span>
+                    <span class="stat-card-value" id="statPaid">—</span>
+                </div>
+                <div class="stat-card pending">
+                    <span class="stat-card-label">⏳ Pending</span>
+                    <span class="stat-card-value" id="statPending">—</span>
+                </div>
+                <div class="stat-card overdue">
+                    <span class="stat-card-label">⚠️ Overdue</span>
+                    <span class="stat-card-value" id="statOverdue">—</span>
+                </div>
+            </div>
+
+            <!-- Workflow hint -->
+            <div class="workflow-hint" id="workflowHint" style="display:none;">
+                <span style="font-size:1.2rem;">ℹ️</span>
+                <div class="steps">
+                    <div class="hint-step"><div class="hint-step-num">1</div> Edit dates or status in the table</div>
+                    <div class="hint-step"><div class="hint-step-num">2</div> Click <strong style="color:var(--text-main);">Save Invoice Dates</strong> or <strong style="color:var(--text-main);">Save Changes</strong></div>
+                    <div class="hint-step"><div class="hint-step-num">3</div> Tick ☑ then click <strong style="color:var(--text-main);">Send to Biloop</strong> to upload</div>
+                </div>
+            </div>
             <div class="table-container">
-                <div id="loader" class="loader">
+                <div id="loader" class="loader" style="flex-direction:column;">
                     <div class="spinner"></div>
+                    <span class="loader-label">Loading your invoices…</span>
                 </div>
                 
                 <table id="invoiceTable" style="display: none;">
@@ -606,16 +895,20 @@
                                     <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
                                 </div>
                             </th>
-                            <th>Cliente</th>
-                            <th>Candidato</th>
-                            <th>Proceso</th>
+                            <th>Client</th>
+                            <th>Candidate</th>
+                            <th>Position</th>
                             <th class="date-col-header">
                                 📅 Invoice Date
-                                <span class="date-hint">Edit dates, then click Update Dates</span>
+                                <span class="date-hint">Edit, then click Save Invoice Dates</span>
                             </th>
-                            <th>Importe</th>
+                            <th class="est-date-col-header">
+                                🗓 Est. Payment Date
+                                <span class="date-hint">Edit, then click Save Changes</span>
+                            </th>
+                            <th>Invoice Amount</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Send</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -625,13 +918,13 @@
         </div>
     </div>
 
-    <!-- View 2: Margin Management -->
+    <!-- View 2: Recruiter Margins -->
     <div id="marginView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
-                    <h1>Margin Management</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Edit recruiter & margin data (Columns W-AH) directly from Sheet 1</p>
+                    <h1>Recruiter Margins</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Track and update recruiter fees and commissions</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
@@ -642,6 +935,11 @@
                     </button>
                 </div>
             </header>
+
+            <div class="tip-banner">
+                <span style="font-size:1.1rem;">💡</span>
+                <span>Click any field in the table to edit it, then press <strong style="color:var(--text-main);">💾 Save</strong> on that row to update the spreadsheet.</span>
+            </div>
 
             <div class="table-container">
                 <div id="marginLoader" class="loader">
@@ -655,17 +953,18 @@
                             <th>Client</th>
                             <th>Candidate</th>
                             <th>Recruiter Name</th>
-                            <th>Margin</th>
-                            <th>Recruiter Comm.</th>
-                            <th>Collected</th>
-                            <th>Invoice</th>
-                            <th>Recr. Invoice ID</th>
-                            <th>Invoice Date</th>
-                            <th>Due Date</th>
+                            <th class="margin-key-col-header">💰 Margin
+                                <span class="date-hint">Key metric</span>
+                            </th>
+                            <th class="margin-key-col-header">💰 Recruiter Comm.
+                                <span class="date-hint">Key metric</span>
+                            </th>
+                            <th>Collected by BT</th>
+                            <th>Invoice Ref.</th>
+                            <th class="margin-key-col-header">💰 Gross Amount
+                                <span class="date-hint">Key metric</span>
+                            </th>
                             <th>VAT</th>
-                            <th>IRPF</th>
-                            <th>Gross Amount</th>
-                            <th>Pay Status</th>
                             <th style="width: 80px;">Save</th>
                         </tr>
                     </thead>
@@ -686,24 +985,35 @@
         <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_s33znkum1d" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
     </div>
 
-    <!-- View 5: Co-pilot -->
+    <!-- View 5: Smart Assistant -->
     <div id="copilotView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
-                    <h1>AI Co-pilot</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Ask Gemini about your invoices and margins</p>
+                    <h1>✨ Smart Assistant</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Ask anything about your invoices, payments, or recruiter performance</p>
                 </div>
             </header>
-            <div class="table-container" style="padding: 24px; display: flex; flex-direction: column; height: 65vh;">
+
+            <div class="chip-grid">
+                <button class="chip" onclick="fillChip(this.textContent)">💰 Which invoices are unpaid?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">👤 Who is our top billing recruiter?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">📅 What’s due for payment this month?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">📊 What’s the total revenue this quarter?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">⚠️ Which invoices are overdue?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">🔍 Show me all invoices for a specific client</button>
+            </div>
+
+            <div class="table-container" style="padding: 24px; display: flex; flex-direction: column; height: 58vh;">
                 <div id="chatHistory" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
-                    <div style="background: rgba(79, 70, 229, 0.1); padding: 16px; border-radius: 8px; color: var(--text-main); align-self: flex-start; max-width: 80%;">
-                        Hello! I am your AI Co-pilot powered by Gemini. I check your Google Sheets data in real-time. How can I help you today?
+                    <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124,58,237,0.2); padding: 16px; border-radius: 12px; color: var(--text-main); align-self: flex-start; max-width: 80%;">
+                        ✨ Hi there! I’m your Smart Assistant, powered by Gemini AI. I can read your live invoice and recruiter data to answer questions instantly.<br><br>
+                        <span style="color:var(--text-muted); font-size:0.88rem;">Try one of the examples above, or type your own question below.</span>
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px;">
-                    <input type="text" id="chatInput" placeholder="Ask about top billers, unpaid invoices, or specific candidates..." style="flex: 1; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;" onkeypress="handleChatKeyPress(event)">
-                    <button class="btn-primary" onclick="sendMessage()" id="sendBtn">Send ✨</button>
+                    <input type="text" id="chatInput" placeholder="Type a question or click an example above…" style="flex: 1; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;" onkeypress="handleChatKeyPress(event)">
+                    <button class="btn-primary" onclick="sendMessage()" id="sendBtn">✨ Ask</button>
                 </div>
             </div>
         </div>
@@ -830,11 +1140,22 @@
 
             const sheetStatus = invoice['Status'] || '';
             let statusClass = '';
-            let statusLabel = sheetStatus || 'Pending';
             if (/paid/i.test(sheetStatus)) {
-                statusClass = 'success';
+                statusClass = 'paid';
             } else if (/overdue/i.test(sheetStatus)) {
-                statusClass = 'error';
+                statusClass = 'overdue';
+            } else {
+                statusClass = 'pending';
+            }
+
+            // Estimated Payment Date (col T)
+            const estPayRaw = invoice['Estimated Payment Date'] || '';
+            let estPayFormatted = '';
+            if (estPayRaw && estPayRaw.includes('/')) {
+                const ep = estPayRaw.split('/');
+                if (ep.length === 3) estPayFormatted = `${ep[2]}-${ep[1]}-${ep[0]}`;
+            } else {
+                estPayFormatted = estPayRaw;
             }
 
             const tr = document.createElement('tr');
@@ -851,8 +1172,21 @@
                     <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
                            data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}">
                 </td>
+                <td>
+                    <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
+                           data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}">
+                </td>
                 <td class="currency">€${invoice['Importe Cobro'].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                <td><span class="status-badge ${statusClass}" id="status-${index}">${statusLabel}</span></td>
+                <td>
+                    <select class="status-select ${statusClass}" id="status-${index}"
+                            data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
+                            onchange="updateStatusSelectStyle(this)">
+                        <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pending</option>
+                        <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Paid</option>
+                        <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Overdue</option>
+                        <option value="Cancelled" ${/cancelled/i.test(sheetStatus) ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </td>
                 <td>
                     <button class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="uploadSingle(${index})" id="btn-${index}">
                         Upload
@@ -861,11 +1195,110 @@
             `;
             tbody.appendChild(tr);
         });
+
+        updateStatsBar(data);
+        document.getElementById('statsBar').style.display = 'flex';
+        document.getElementById('workflowHint').style.display = 'flex';
     }
 
     function toggleAll(source) {
         const checkboxes = document.querySelectorAll('.row-checkbox');
         checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    function updateStatsBar(data) {
+        const total = data.length;
+        const totalAmt = data.reduce((sum, inv) => sum + (inv['Importe Cobro'] || 0), 0);
+        const paid    = data.filter(inv => /paid/i.test(inv['Status']) && !/overdue/i.test(inv['Status'])).length;
+        const overdue = data.filter(inv => /overdue/i.test(inv['Status'])).length;
+        const pending = total - paid - overdue;
+
+        document.getElementById('statTotal').textContent   = total;
+        document.getElementById('statAmount').textContent  = '€' + totalAmt.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+        document.getElementById('statPaid').textContent    = paid;
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statOverdue').textContent = overdue;
+    }
+
+    // Update status select dropdown colour class on change
+    function updateStatusSelectStyle(select) {
+        select.classList.remove('paid', 'overdue', 'pending');
+        const val = select.value.toLowerCase();
+        if (val === 'paid') select.classList.add('paid');
+        else if (val === 'overdue') select.classList.add('overdue');
+        else select.classList.add('pending');
+    }
+
+    // Save changed status and/or estimated payment dates
+    async function saveInvoiceFields() {
+        const statusSelects = document.querySelectorAll('.status-select');
+        const estDateInputs = document.querySelectorAll('.est-date-input');
+        
+        // Build a map: row_index -> { status?, est_payment_date? }
+        const rowMap = {};
+
+        statusSelects.forEach(sel => {
+            const original = sel.getAttribute('data-original');
+            const current = sel.value;
+            const rowIdx = sel.getAttribute('data-row');
+            if (current !== original) {
+                if (!rowMap[rowIdx]) rowMap[rowIdx] = { row_index: parseInt(rowIdx) };
+                rowMap[rowIdx].status = current;
+            }
+        });
+
+        estDateInputs.forEach(input => {
+            const original = input.getAttribute('data-original');
+            const current = input.value;
+            const rowIdx = input.getAttribute('data-row');
+            if (current !== original) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
+                let sheetDate = current;
+                if (current) {
+                    const parts = current.split('-');
+                    if (parts.length === 3) sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                if (!rowMap[rowIdx]) rowMap[rowIdx] = { row_index: parseInt(rowIdx) };
+                rowMap[rowIdx].est_payment_date = sheetDate;
+            }
+        });
+
+        const updates = Object.values(rowMap);
+
+        if (updates.length === 0) {
+            showToast('No status or estimated date changes to save.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('saveFieldsBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Saving...';
+
+        try {
+            const response = await fetch('/api/update_invoice_fields', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Mark saved values as the new originals
+                statusSelects.forEach(sel => sel.setAttribute('data-original', sel.value));
+                estDateInputs.forEach(input => input.setAttribute('data-original', input.value));
+                showToast(`${updates.length} row(s) updated successfully!`);
+                // Refresh sheets iframe
+                const sheetsIframe = document.querySelector('#sheetsView iframe');
+                if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
+            } else {
+                showToast('Failed to save: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Failed to connect to server', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '✏️ Save Status & Est. Dates';
+        }
     }
 
     // Save all changed dates when user clicks Update Dates button
@@ -1021,10 +1454,11 @@
 
     const MARGIN_KEYS = [
         'Recruiter Name', 'Margin', 'Recruiter Commission', 'Collected by BT',
-        'Invoice', 'Recruiter Invoice ID', 'Invoice Date (Recruiter)',
-        'Due Date (Recruiter)', 'VAT', 'IRPF',
-        'Gross Invoice Amount (Recruiter)', 'Payment Status'
+        'Invoice', 'VAT', 'Gross Invoice Amount (Recruiter)'
     ];
+
+    // Columns to highlight as key calculation metrics
+    const MARGIN_KEY_HIGHLIGHT = new Set(['Margin', 'Recruiter Commission', 'Gross Invoice Amount (Recruiter)']);
 
     function renderMarginTable(data) {
         const tbody = document.getElementById('marginTableBody');
@@ -1043,7 +1477,10 @@
             // Editable margin columns
             MARGIN_KEYS.forEach(key => {
                 const val = record[key] || '';
-                html += `<td><input class="margin-input" data-row="${index}" data-key="${key}" value="${val.replace(/"/g, '&quot;')}"></td>`;
+                const isKey = MARGIN_KEY_HIGHLIGHT.has(key);
+                const cellStyle = isKey ? ' style="background: rgba(37,99,235,0.05);"' : '';
+                const inputClass = isKey ? 'margin-input margin-input-key' : 'margin-input';
+                html += `<td${cellStyle}><input class="${inputClass}" data-row="${index}" data-key="${key}" value="${val.replace(/"/g, '&quot;')}"></td>`;
             });
             
             // Save button
@@ -1236,6 +1673,15 @@
         
         chatHistory.appendChild(msgDiv);
         chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    // Fill chatInput from a chip click, trim emoji prefix
+    function fillChip(text) {
+        // Strip leading emoji plus space (e.g. "💰 " → "")
+        const cleaned = text.replace(/^[\p{Emoji}\s]+/u, '').trim();
+        const input = document.getElementById('chatInput');
+        input.value = cleaned;
+        input.focus();
     }
 
     function handleChatKeyPress(event) {
