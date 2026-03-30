@@ -2,53 +2,30 @@ import json
 
 def extract_schema():
     with open("api_v1.json", "r") as f:
-        # Read the file and strip the trailing `{}`
         content = f.read().strip()
-        if content.endswith("{}"):
-            content = content[:-2].strip()
-        data = json.loads(content)
-        
-    post_invoices = data.get("paths", {}).get("/api-global/v1/erp/incomes/invoices/postInvoices", {}).get("post", {})
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            content = content[:e.pos]
+            content = content[:content.rfind('}')+1]
+            content += "}"
+            data = json.loads(content)
+            
+    # dump all properties of /erp/incomes/invoices/postInvoices
+    endpoint = data.get("paths", {}).get("/erp/incomes/invoices/postInvoices", {})
+    schema = endpoint.get("post", {}).get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema", {})
     
-    if not post_invoices:
-        print("Endpoint not found.")
-        return
-        
-    schema_ref = None
-    try:
-        schema_ref = post_invoices["requestBody"]["content"]["application/json"]["schema"]["$ref"]
-    except KeyError:
-        print("Could not find direct schema ref in requestBody. Looking at structure...")
-        print(json.dumps(post_invoices.get("requestBody", {}), indent=2))
-        return
-        
-    print(f"Ref found: {schema_ref}")
-    
-    ref_path = schema_ref.lstrip("#/").split("/")
-    schema = data
-    for bit in ref_path:
-        schema = schema.get(bit, {})
-        
-    print("\n=== POST INVOICES SCHEMA ===")
-    print(json.dumps(schema, indent=2, ensure_ascii=False))
+    props = schema.get("items", {}).get("properties", {})
+    print("TOP LEVEL PROPERTIES:")
+    for k, v in props.items():
+        print(f"  {k}: {v.get('description', '')}")
 
-    if "properties" in schema:
-        print("\n=== RESOLVING NESTED REFS ===")
-        for prop, details in schema["properties"].items():
-            if "$ref" in details:
-                nested_ref = details["$ref"].lstrip("#/").split("/")
-                nested = data
-                for bit in nested_ref:
-                    nested = nested.get(bit, {})
-                print(f"\nNested Schema for {prop}:")
-                print(json.dumps(nested, indent=2, ensure_ascii=False))
-            elif details.get("type") == "array" and "$ref" in details.get("items", {}):
-                nested_ref = details["items"]["$ref"].lstrip("#/").split("/")
-                nested = data
-                for bit in nested_ref:
-                    nested = nested.get(bit, {})
-                print(f"\nNested Schema for array {prop}:")
-                print(json.dumps(nested, indent=2, ensure_ascii=False))
+    print("\nERP_LINE PROPERTIES:")
+    line_props = props.get("ERP_line", {}).get("items", {}).get("properties", {})
+    if not line_props:
+        print("  Not found.")
+    for k, v in line_props.items():
+        print(f"  {k}: {v.get('description', '')}")
 
 if __name__ == "__main__":
     extract_schema()

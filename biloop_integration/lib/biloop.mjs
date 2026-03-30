@@ -36,28 +36,86 @@ function formatBiloopDate(d) {
   return d;
 }
 
+/** Fetch client NIF dynamically from Biloop */
+async function getClientNif(clientName, token) {
+  if (!clientName) return null;
+  const nameQuery = clientName.toLowerCase().trim();
+  
+  try {
+    const res = await fetch(`${BILOOP_BASE_URL}/erp/masters/clients/getClients?company_id=E67652`, {
+      method: 'GET',
+      headers: { token, SUBSCRIPTION_KEY }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.data) return null;
+    
+    // Find precise match or substring match
+    const matchingClient = data.data.find(c => {
+      const dbName = (c.name || '').toLowerCase();
+      const dbTrade = (c.trade_name || '').toLowerCase();
+      return dbName.includes(nameQuery) || dbTrade.includes(nameQuery) || nameQuery.includes(dbName);
+    });
+    
+    return matchingClient ? matchingClient.nif : null;
+  } catch (e) {
+    console.error("Error fetching NIF:", e);
+    return null;
+  }
+}
+
 /** Push an invoice JSON to Biloop and optionally download PDF */
 export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   const token = await getAuthToken();
 
-  // Convert flat invoice format to Biloop OpenAPI schema
-  const a3Ref = invoiceJson['ID Factura Dinámica'] || `REQ-${Date.now()}`;
-  const baseAmt = parseFloat(invoiceJson['Importe factura'] || 0);
-  const vatAmt = parseFloat(invoiceJson['IVA'] || 0);
-  const totalAmt = parseFloat(invoiceJson['Importe Cobro'] || 0);
-  const dateStr = formatBiloopDate(invoiceJson['Fecha Factura']);
+  const clientName = invoiceJson.Cliente || invoiceJson['Client Name'] || 'Unknown Client';
+  const resolvedNif = await getClientNif(clientName, token) || "B99999999";
+
+  // Core Financials and Identifiers
+  const a3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
+  const baseAmt = parseFloat(invoiceJson['Importe factura'] || invoiceJson['Net Invoice Amount'] || invoiceJson['Invoice Amount'] || 0);
+  const vatAmt = parseFloat(invoiceJson['IVA'] || invoiceJson['IVA / VAT'] || 0);
+  const totalAmt = parseFloat(invoiceJson['Importe Cobro'] || invoiceJson['Gross Invoice Amount'] || 0);
+  const dateStr = formatBiloopDate(invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date']);
+  const dueDateStr = formatBiloopDate(invoiceJson['Due Date'] || invoiceJson['Due Date.1']);
+
+  // Construct comprehensive details from the spreadsheet for the Invoice/Product body
+  const position = invoiceJson['Position'] || invoiceJson['Proceso'] || '';
+  const candidate = invoiceJson['Candidate Name'] || '';
+  const startDate = invoiceJson['Start Date'] || '';
+  const fixSalary = invoiceJson['Fix Salary'] || '';
+  const varSalary = invoiceJson['Variable Salary'] || '';
+  const equity = invoiceJson['Equity %'] || '';
+  const recruiter = invoiceJson['Recruiter Name'] || '';
+  const feePct = invoiceJson['Fee %'] || '';
+  const discountPct = parseFloat(invoiceJson['Descuento (%)'] || invoiceJson['Discount %'] || 0);
+
+  // Build a robust description combining all operational tags to ensure no data is lost
+  let detailedDescription = `Services rendered for: ${position}`;
+  if (candidate) detailedDescription += `\nCandidate: ${candidate}`;
+  if (startDate) detailedDescription += `\nStart Date: ${startDate}`;
+  
+  let compensation = [];
+  if (fixSalary) compensation.push(`Fix: ${fixSalary}`);
+  if (varSalary) compensation.push(`Var: ${varSalary}`);
+  if (equity) compensation.push(`Equity: ${equity}`);
+  if (compensation.length > 0) detailedDescription += `\nCompensation: ${compensation.join(' | ')}`;
+  
+  if (recruiter) detailedDescription += `\nRecruiter: ${recruiter}`;
+  if (feePct) detailedDescription += `\nAgreed Fee: ${feePct}`;
 
   const payload = {
     company_id: "E67652",
-    master_name: invoiceJson.Cliente || 'Unknown Client',
-    master_nif: "B99999999", // Using a dummy NIF instead of B12345678 to prevent OPTARE mapping
+    master_name: clientName,
+    master_nif: resolvedNif,
     address: "Biloop Integration Address",
     date: dateStr,
     operation_date: dateStr,
-    issuance_date: dateStr,
-    SERIE: "F",
+    due_date: dueDateStr || dateStr,
+    expiration_date: dueDateStr || dateStr, // Include both common Biloop schema expiration keys
+    SERIE: invoiceJson.SERIE || "F",
     a3_reference: a3Ref,
-    invoice_description: invoiceJson.Proceso || 'Services rendered',
+    invoice_description: detailedDescription,
     
     // Financials
     base: baseAmt,
@@ -72,10 +130,11 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
         company_id: "E67652",
         product_id: 1,
         real_product_id: "1",
-        product_name: invoiceJson.Proceso || 'General Services',
+        product_name: `${position} ${candidate ? ' - ' + candidate : ''}`.trim() || 'General Services',
+        description: detailedDescription,
         units: 1,
         price: baseAmt,
-        discount: parseFloat(invoiceJson['Descuento (%)'] || 0),
+        discount: discountPct,
         vat_type_id: "ORD21"
       }
     ]
