@@ -26,7 +26,11 @@ const MARGIN_COLUMNS = [
 // --- Helpers ---
 function cleanCurrency(val) {
   if (val == null || val === '') return 0.0;
-  const cleaned = String(val).replace(/€/g, '').replace(/,/g, '').trim();
+  let cleaned = String(val).replace(/€/g, '').trim();
+  // Remove dots (thousands separator)
+  cleaned = cleaned.replace(/\./g, '');
+  // Replace comma (decimal separator) with dot
+  cleaned = cleaned.replace(/,/g, '.');
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0.0 : num;
 }

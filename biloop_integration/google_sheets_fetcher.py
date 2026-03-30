@@ -32,12 +32,33 @@ MARGIN_COLUMNS = [
 ]
 
 def clean_currency(val):
-    if pd.isna(val):
+    if pd.isna(val) or val == '':
         return 0.0
     if isinstance(val, (int, float)):
         return float(val)
     if isinstance(val, str):
-        val = val.replace('€', '').replace(',', '').strip()
+        val = val.replace('€', '').strip()
+        if not val:
+            return 0.0
+        # If the string has a dot and no comma (10.500)
+        # Or has BOTH dot and comma (10.500,50)
+        if '.' in val and ',' in val:
+            if val.rfind('.') > val.rfind(','):
+                # 10,500.50
+                val = val.replace(',', '')
+            else:
+                # 10.500,50
+                val = val.replace('.', '').replace(',', '.')
+        elif '.' in val:
+            # 10.500 -> 10500
+            val = val.replace('.', '')
+        elif ',' in val:
+            # 10,500 -> 10500 or 10,5 -> 10.5
+            parts = val.split(',')
+            if len(parts) == 2 and len(parts[1]) == 3:
+                val = val.replace(',', '')
+            else:
+                val = val.replace(',', '.')
     try:
         return float(val)
     except ValueError:
@@ -62,7 +83,7 @@ def fetch_google_sheets_data():
         response = requests.get(CSV_URL_1)
         response.raise_for_status()
         csv_content = response.content.decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_content), header=3)
+        df = pd.read_csv(io.StringIO(csv_content), header=3, dtype=str)
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=['Invoice ID'])
         
@@ -173,7 +194,7 @@ def fetch_margin_data_from_sheet1():
         response = requests.get(CSV_URL_1)
         response.raise_for_status()
         csv_content = response.content.decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_content), header=3)
+        df = pd.read_csv(io.StringIO(csv_content), header=3, dtype=str)
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=['Invoice ID'])
         
