@@ -10,29 +10,29 @@ st.set_page_config(layout="wide", page_title="Biloop Hub")
 
 # Sidebar
 st.sidebar.title("Biloop Hub")
-view = st.sidebar.radio("Navigation", [
-    "📄 Invoices Upload",
-    "🧮 Margin Calculator",
+view = st.sidebar.radio("Navegación", [
+    "📄 Subida de Facturas",
+    "🧮 Calculadora de Margen",
     "📊 Google Sheets",
     "📊 Google Sheets 2",
     "📈 Looker Studio",
     "🤖 Co-pilot"
 ])
 
-if view == "📄 Invoices Upload":
-    st.header("Invoices Dashboard")
-    st.caption("Live sync from Google Sheets to Biloop API")
+if view == "📄 Subida de Facturas":
+    st.header("Panel de Facturas")
+    st.caption("Sincronización en vivo desde Google Sheets a la API de Biloop")
     
     col1, col2 = st.columns([1, 8])
     with col1:
-        if st.button("🔄 Refresh"):
+        if st.button("🔄 Actualizar"):
             st.cache_data.clear()
             st.rerun()
             
     with col2:
         # Date Updates
-        with st.expander("Update Dates manually"):
-            st.write("To update dates, select the row, modify the date format to DD/MM/YYYY, and click Update.")
+        with st.expander("Actualizar fechas manualmente"):
+            st.write("Para actualizar las fechas, selecciona la fila, modifica el formato de la fecha a DD/MM/AAAA y haz clic en Actualizar.")
     
     @st.cache_data(ttl=60)
     def load_invoices():
@@ -41,10 +41,11 @@ if view == "📄 Invoices Upload":
     df = load_invoices()
     if df is not None and not df.empty:
         # Prepare df for display
-        display_df = df[['Client Name', 'Candidate Name', 'Position', 'Invoice Date', 'Gross Invoice Amount', 'Status']].copy()
-        display_df.insert(0, "Select", False)
+        display_df = df[['Dynamic Invoice', 'Client Name', 'Candidate Name', 'Position', 'Invoice Date', 'Gross Invoice Amount', 'Status']].copy()
+        display_df.columns = ['Nº Factura', 'Cliente', 'Candidato', 'Proceso', 'Fecha Factura', 'Importe Cobro', 'Estado']
+        display_df.insert(0, "Seleccionar", False)
         
-        st.write("Edit dates directly or check the 'Select' box to upload to Biloop.")
+        st.write("Edita las fechas directamente o marca la casilla 'Seleccionar' para subir a Biloop.")
         edited_df = st.data_editor(display_df, hide_index=True, use_container_width=True)
         
         # Check for date updates by comparing display_df and edited_df
@@ -59,8 +60,8 @@ if view == "📄 Invoices Upload":
                 date_updates.append({"row_index": row_idx, "new_date": curr})
                 
         if date_updates:
-            if st.button("💾 Save Dates to Sheets"):
-                with st.spinner("Saving..."):
+            if st.button("💾 Guardar fechas en Sheets"):
+                with st.spinner("Guardando..."):
                     res = google_sheets_fetcher.update_invoice_dates(date_updates)
                     if res.get("success"):
                         st.success(res["message"])
@@ -69,10 +70,10 @@ if view == "📄 Invoices Upload":
                         st.error(res["message"])
         
         # Upload selected logic
-        if st.button("☁️ Upload Selected to Biloop", type="primary"):
-            selected_indices = edited_df.index[edited_df['Select']].tolist()
+        if st.button("☁️ Subir seleccionadas a Biloop", type="primary"):
+            selected_indices = edited_df.index[edited_df['Seleccionar']].tolist()
             if not selected_indices:
-                st.warning("Please select at least one invoice to upload.")
+                st.warning("Por favor, selecciona al menos una factura para subir.")
             else:
                 json_data = google_sheets_fetcher.map_to_biloop_json(df)
                 success_count = 0
@@ -81,15 +82,15 @@ if view == "📄 Invoices Upload":
                     success = biloop_client.push_invoice_to_biloop(invoice_data)
                     if success is not False:
                         success_count += 1
-                st.success(f"Successfully uploaded {success_count} invoices to Biloop.")
+                st.success(f"Se han subido con éxito {success_count} facturas a Biloop.")
     else:
-        st.error("Failed to fetch data from Google Sheets.")
+        st.error("Error al obtener los datos de Google Sheets.")
 
-elif view == "🧮 Margin Calculator":
-    st.header("Margin Calculator")
-    st.caption("Calculate and update Recruiter margins inline")
+elif view == "🧮 Calculadora de Margen":
+    st.header("Calculadora de Margen")
+    st.caption("Calcula y actualiza los márgenes de los reclutadores en línea")
     
-    if st.button("🔄 Refresh Data"):
+    if st.button("🔄 Actualizar Datos"):
         st.cache_data.clear()
         st.rerun()
         
@@ -102,7 +103,7 @@ elif view == "🧮 Margin Calculator":
         json_data = google_sheets_fetcher.map_margin_json(df)
         
         options = {f"{inv.get('_id_factura', 'Row ' + str(inv.get('_sheet_row_index', '')))} - {inv.get('Cliente')} ({inv.get('Candidato')})": i for i, inv in enumerate(json_data)}
-        selected = st.selectbox("Select Invoice", list(options.keys()))
+        selected = st.selectbox("Seleccionar Factura", list(options.keys()))
         
         if selected:
             idx = options[selected]
@@ -120,7 +121,7 @@ elif view == "🧮 Margin Calculator":
                     except:
                         m_percent_raw = 0.0
                 if m_percent_raw > 1: m_percent_raw /= 100.0
-                margen_percent = st.number_input("Margen % (AF)", value=m_percent_raw, step=0.001)
+                margen_percent = st.number_input("Margen (%) (AF)", value=m_percent_raw, step=0.001)
                 
             with col2:
                 recruiter = st.text_input("Recruiter (AE)", value=inv.get("_recruiter", ""))
@@ -130,7 +131,7 @@ elif view == "🧮 Margin Calculator":
                     try: return float(str(val).replace('€', '').replace('%', '').replace(',', '').strip() or 0)
                     except: return 0.0
                     
-                factura_neta = st.number_input("Factura Neta (P) [€]", value=parse_float(inv.get('Factura neta', 0)), step=0.01)
+                factura_neta = st.number_input("Factura neta (P) [€]", value=parse_float(inv.get('Factura neta', 0)), step=0.01)
                 
             with col3:
                 # Comision logic
@@ -142,8 +143,8 @@ elif view == "🧮 Margin Calculator":
                 margen_eur = factura_neta - comision
                 st.text_input("Margen (AH) [€]", value=f"{margen_eur:.2f}", disabled=True)
                 
-            if st.button("💾 Update in Sheets", type="primary"):
-                with st.spinner("Updating..."):
+            if st.button("💾 Actualizar en Sheets", type="primary"):
+                with st.spinner("Actualizando..."):
                     result = google_sheets_fetcher.update_row_margins(
                         row_index=inv["_sheet_row_index"],
                         factura_neta=factura_neta,
@@ -156,7 +157,7 @@ elif view == "🧮 Margin Calculator":
                         st.success(result["message"])
                         st.cache_data.clear()
                     else:
-                        st.error(result.get("message", "Failed to update"))
+                        st.error(result.get("message", "Error al actualizar"))
 
 elif view == "📊 Google Sheets":
     st.components.v1.iframe("https://docs.google.com/spreadsheets/d/15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk/edit?gid=0&usp=sharing&widget=true&headers=false", height=800, scrolling=True)
@@ -168,8 +169,8 @@ elif view == "📈 Looker Studio":
     st.components.v1.iframe("https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_s33znkum1d", height=800, scrolling=True)
 
 elif view == "🤖 Co-pilot":
-    st.header("AI Co-pilot")
-    st.caption("Ask Gemini about your invoices and margins")
+    st.header("Copiloto IA")
+    st.caption("Pregunta a Gemini sobre tus facturas y márgenes")
     
     api_key = None
     if "GEMINI_API_KEY" in st.secrets:
@@ -178,7 +179,7 @@ elif view == "🤖 Co-pilot":
         api_key = os.environ.get("GEMINI_API_KEY")
         
     if not api_key:
-        st.warning("Gemini API key is missing. Please set it securely in your deployment secrets or `.streamlit/secrets.toml`.")
+        st.warning("Falta la clave de API de Gemini. Por favor, configúrala en los secretos de implementación o en `.streamlit/secrets.toml`.")
     else:
         genai.configure(api_key=api_key)
         
@@ -189,13 +190,13 @@ elif view == "🤖 Co-pilot":
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
                 
-        if prompt := st.chat_input("Ask about top billers, unpaid invoices..."):
+        if prompt := st.chat_input("Pregunta sobre los que más facturan, facturas sin pagar..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
                 
             with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
+                with st.spinner("Pensando..."):
                     try:
                         df_invoices = google_sheets_fetcher.fetch_google_sheets_data()
                         df_margins = google_sheets_fetcher.fetch_margin_sheets_data()
@@ -213,4 +214,4 @@ elif view == "🤖 Co-pilot":
                         st.markdown(response.text)
                         st.session_state.messages.append({"role": "assistant", "content": response.text})
                     except Exception as e:
-                        st.error(f"Error accessing AI: {str(e)}")
+                        st.error(f"Error al acceder a la IA: {str(e)}")

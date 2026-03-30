@@ -17,18 +17,18 @@ CSV_URL_1 = f"https://docs.google.com/spreadsheets/d/{SHEET_ID_1}/export?format=
 # AC=29: Invoice Date, AD=30: Due Date, AE=31: VAT, AF=32: IRPF,
 # AG=33: Gross Invoice Amount, AH=34: Payment Status
 MARGIN_COLUMNS = [
-    {'key': 'Recruiter Name', 'col_idx': 22, 'gspread_col': 23},
-    {'key': 'Margin', 'col_idx': 23, 'gspread_col': 24},
-    {'key': 'Recruiter Commission', 'col_idx': 24, 'gspread_col': 25},
-    {'key': 'Collected by BT', 'col_idx': 25, 'gspread_col': 26},
-    {'key': 'Invoice', 'col_idx': 26, 'gspread_col': 27},
-    {'key': 'Recruiter Invoice ID', 'col_idx': 27, 'gspread_col': 28},
-    {'key': 'Invoice Date (Recruiter)', 'col_idx': 28, 'gspread_col': 29},
-    {'key': 'Due Date (Recruiter)', 'col_idx': 29, 'gspread_col': 30},
-    {'key': 'VAT', 'col_idx': 30, 'gspread_col': 31},
+    {'key': 'Recruiter', 'col_idx': 22, 'gspread_col': 23},
+    {'key': 'Margen (%)', 'col_idx': 23, 'gspread_col': 24},
+    {'key': 'Comisión Recr', 'col_idx': 24, 'gspread_col': 25},
+    {'key': 'Cobrado', 'col_idx': 25, 'gspread_col': 26},
+    {'key': 'ID Factura', 'col_idx': 26, 'gspread_col': 27},
+    {'key': 'ID Factura Recr', 'col_idx': 27, 'gspread_col': 28},
+    {'key': 'Fecha Factura', 'col_idx': 28, 'gspread_col': 29},
+    {'key': 'Vencimiento', 'col_idx': 29, 'gspread_col': 30},
+    {'key': 'IVA', 'col_idx': 30, 'gspread_col': 31},
     {'key': 'IRPF', 'col_idx': 31, 'gspread_col': 32},
-    {'key': 'Gross Invoice Amount (Recruiter)', 'col_idx': 32, 'gspread_col': 33},
-    {'key': 'Payment Status', 'col_idx': 33, 'gspread_col': 34},
+    {'key': 'Importe Cobro', 'col_idx': 32, 'gspread_col': 33},
+    {'key': 'Estado', 'col_idx': 33, 'gspread_col': 34},
 ]
 
 def clean_currency(val):
@@ -63,6 +63,34 @@ def fetch_google_sheets_data():
         df = pd.read_csv(io.StringIO(csv_content), header=3) 
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=['Invoice ID'])
+        
+        # --- Auto-generate Dynamic Invoice Number (YYYYMMDD-01) ---
+        def generate_yyyymmdd(date_str):
+            if pd.isna(date_str): return ""
+            d_str = str(date_str).strip()
+            parts = d_str.split('/')
+            if len(parts) == 3:
+                # Assuming DD/MM/YYYY format
+                return f"{parts[2]}{parts[1].zfill(2)}{parts[0].zfill(2)}"
+            return d_str
+            
+        df['YYYYMMDD'] = df['Invoice Date'].apply(generate_yyyymmdd)
+        
+        # Sort by date and client name to assign sequential suffixes alphabetically
+        temp_df = df[['YYYYMMDD', 'Client Name']].copy()
+        temp_df = temp_df.sort_values(by=['YYYYMMDD', 'Client Name'])
+        temp_df['suffix'] = temp_df.groupby('YYYYMMDD').cumcount() + 1
+        
+        def format_inv(row):
+            if not row['YYYYMMDD']: return ""
+            return f"{row['YYYYMMDD']}-{row['suffix']:02d}"
+            
+        temp_df['Dynamic Invoice'] = temp_df.apply(format_inv, axis=1)
+        # Restore to original index to maintain row order
+        temp_df = temp_df.sort_index()
+        df['Dynamic Invoice'] = temp_df['Dynamic Invoice']
+        # ----------------------------------------------------------
+
         print(f"Successfully fetched {len(df)} records from Sheet 1.")
         return df
     except Exception as e:
@@ -74,6 +102,7 @@ def map_to_biloop_json(df):
     invoices = []
     for _, row in df.iterrows():
         invoice = {
+            "ID Factura Dinámica": str(row.get('Dynamic Invoice', '')).strip(),
             "Cliente": str(row.get('Client Name', '')).strip(),
             "Proceso": str(row.get('Position', '')).strip(),
             "Candidato": str(row.get('Candidate Name', '')).strip(),

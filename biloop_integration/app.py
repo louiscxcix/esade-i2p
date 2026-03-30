@@ -23,7 +23,7 @@ def get_invoices():
         json_data = google_sheets_fetcher.map_to_biloop_json(df)
         return jsonify(json_data)
     else:
-        return jsonify({"error": "Failed to fetch data from Google Sheets."}), 500
+        return jsonify({"error": "Error al obtener los datos de Google Sheets."}), 500
 
 @app.route('/api/margins', methods=['GET'])
 def get_margins():
@@ -33,7 +33,7 @@ def get_margins():
     if data is not None:
         return jsonify(data)
     else:
-        return jsonify({"error": "Failed to fetch margin data from Google Sheets."}), 500
+        return jsonify({"error": "Error al obtener los datos de margen de Google Sheets."}), 500
 
 @app.route('/api/upload', methods=['POST'])
 def upload_invoice():
@@ -41,7 +41,7 @@ def upload_invoice():
     invoice_data = request.json
     
     if not invoice_data:
-        return jsonify({"error": "No invoice data provided."}), 400
+        return jsonify({"error": "No se proporcionaron datos de la factura."}), 400
         
     print(f"Received upload request for candidate: {invoice_data.get('Candidato')}")
     
@@ -56,9 +56,9 @@ def upload_invoice():
     success = biloop_client.push_invoice_to_biloop(invoice_data)
     
     if success is not False: # (Handle mock vs real bool returns)
-        return jsonify({"success": True, "message": "Uploaded successfully to Biloop."})
+        return jsonify({"success": True, "message": "Subido con éxito a Biloop."})
     else:
-        return jsonify({"success": False, "message": "Failed to upload to Biloop."}), 500
+        return jsonify({"success": False, "message": "Error al subir a Biloop."}), 500
 
 @app.route('/api/update_dates', methods=['POST'])
 def update_dates():
@@ -66,7 +66,7 @@ def update_dates():
     updates = request.json
     
     if not updates or not isinstance(updates, list):
-        return jsonify({"success": False, "message": "Invalid updates data provided."}), 400
+        return jsonify({"success": False, "message": "Los datos de actualización proporcionados no son válidos."}), 400
         
     print(f"Received request to update {len(updates)} dates: {updates}")
     

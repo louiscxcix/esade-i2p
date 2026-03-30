@@ -549,10 +549,10 @@
     </div>
     <div class="nav-menu">
         <div class="nav-item active" onclick="switchView('appView', this)">
-            📄 Invoices Upload
+            📄 Subida de Facturas
         </div>
         <div class="nav-item" onclick="switchView('marginView', this)">
-            📊 Margin Management
+            📊 Gestión de Márgenes
         </div>
         <div class="nav-item" onclick="switchView('sheetsView', this)">
             📋 Google Sheets
@@ -561,7 +561,7 @@
             📈 Looker Studio
         </div>
         <div class="nav-item" onclick="switchView('copilotView', this)">
-            🤖 Co-pilot
+            🤖 Copiloto IA
         </div>
     </div>
 </div>
@@ -574,18 +574,18 @@
         <div class="container">
             <header>
                 <div>
-                    <h1>Invoices Dashboard</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Live sync from Google Sheets to Biloop API</p>
+                    <h1>Panel de Facturas</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Sincronización en vivo desde Google Sheets a la API de Biloop</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ New Invoice
+                        ➕ Nueva Factura
                     </button>
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
-                        🔄 Refresh Data
+                        🔄 Actualizar Datos
                     </button>
                     <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);">
-                        💾 Update Dates
+                        💾 Actualizar Fechas
                     </button>
                     <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn">
                         ☁️ Upload to Biloop
@@ -606,16 +606,17 @@
                                     <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
                                 </div>
                             </th>
+                            <th>Nº Factura</th>
                             <th>Cliente</th>
                             <th>Candidato</th>
                             <th>Proceso</th>
                             <th class="date-col-header">
-                                📅 Invoice Date
-                                <span class="date-hint">Edit dates, then click Update Dates</span>
+                                📅 Fecha Factura
+                                <span class="date-hint">Edita las fechas y haz clic en Actualizar Fechas</span>
                             </th>
-                            <th>Importe</th>
-                            <th>Status</th>
-                            <th>Action</th>
+                            <th>Importe Cobro</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -630,15 +631,15 @@
         <div class="container">
             <header>
                 <div>
-                    <h1>Margin Management</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Edit recruiter & margin data (Columns W-AH) directly from Sheet 1</p>
+                    <h1>Gestión de Márgenes</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Edita datos de recruiter y márgenes (Columnas W-AH) directamente desde Sheet 1</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ New Invoice
+                        ➕ Nueva Factura
                     </button>
                     <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
-                        🔄 Refresh
+                        🔄 Actualizar
                     </button>
                 </div>
             </header>
@@ -651,22 +652,22 @@
                 <table id="marginTable" style="display: none;">
                     <thead>
                         <tr>
-                            <th>Invoice ID</th>
-                            <th>Client</th>
-                            <th>Candidate</th>
-                            <th>Recruiter Name</th>
-                            <th>Margin</th>
-                            <th>Recruiter Comm.</th>
-                            <th>Collected</th>
-                            <th>Invoice</th>
-                            <th>Recr. Invoice ID</th>
-                            <th>Invoice Date</th>
-                            <th>Due Date</th>
-                            <th>VAT</th>
+                            <th>ID Factura</th>
+                            <th>Cliente</th>
+                            <th>Candidato</th>
+                            <th>Recruiter</th>
+                            <th>Margen (%)</th>
+                            <th>Comisión Recr</th>
+                            <th>Cobrado</th>
+                            <th>ID Factura</th>
+                            <th>ID Factura Recr</th>
+                            <th>Fecha Factura</th>
+                            <th>Vencimiento</th>
+                            <th>IVA</th>
                             <th>IRPF</th>
-                            <th>Gross Amount</th>
-                            <th>Pay Status</th>
-                            <th style="width: 80px;">Save</th>
+                            <th>Importe Cobro</th>
+                            <th>Estado</th>
+                            <th style="width: 80px;">Guardar</th>
                         </tr>
                     </thead>
                     <tbody id="marginTableBody">
@@ -691,8 +692,8 @@
         <div class="container">
             <header>
                 <div>
-                    <h1>AI Co-pilot</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Ask Gemini about your invoices and margins</p>
+                    <h1>Copiloto IA</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Pregunta a Gemini sobre tus facturas y márgenes</p>
                 </div>
             </header>
             <div class="table-container" style="padding: 24px; display: flex; flex-direction: column; height: 65vh;">
@@ -714,42 +715,42 @@
 <!-- New Invoice Modal -->
 <div id="newInvoiceModal" class="modal-overlay">
     <div class="modal">
-        <h2>➕ Create New Invoice</h2>
+        <h2>➕ Crear Nueva Factura</h2>
         <div class="modal-field">
-            <label>Client Name *</label>
-            <input type="text" id="newClientName" placeholder="e.g. ACME Corp">
+            <label>Cliente *</label>
+            <input type="text" id="newClientName" placeholder="ej. ACME Corp">
         </div>
         <div class="modal-field">
-            <label>Position</label>
-            <input type="text" id="newPosition" placeholder="e.g. Senior Developer">
+            <label>Proceso</label>
+            <input type="text" id="newPosition" placeholder="ej. Senior Developer">
         </div>
         <div class="modal-field">
-            <label>Candidate Name *</label>
-            <input type="text" id="newCandidateName" placeholder="e.g. John Doe">
+            <label>Candidato *</label>
+            <input type="text" id="newCandidateName" placeholder="ej. John Doe">
         </div>
         <div class="modal-field">
-            <label>Start Date</label>
+            <label>Fecha de inicio</label>
             <input type="date" id="newStartDate">
         </div>
         <div class="modal-field">
-            <label>Fix Salary (€)</label>
-            <input type="number" id="newFixSalary" step="0.01" placeholder="e.g. 50000">
+            <label>Salario (€)</label>
+            <input type="number" id="newFixSalary" step="0.01" placeholder="ej. 50000">
         </div>
         <div class="modal-field">
-            <label>Invoice Date</label>
+            <label>Fecha Factura</label>
             <input type="date" id="newInvoiceDate">
         </div>
         <div class="modal-field">
             <label>Fee %</label>
-            <input type="text" id="newFeePercent" placeholder="e.g. 20%">
+            <input type="text" id="newFeePercent" placeholder="ej. 20%">
         </div>
         <div class="modal-field">
-            <label>Invoice Amount (€)</label>
-            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="e.g. 10000">
+            <label>Importe factura (€)</label>
+            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="ej. 10000">
         </div>
         <div class="modal-actions">
-            <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancel</button>
-            <button class="btn-primary" onclick="submitNewInvoice()" id="createInvoiceBtn">Create Invoice</button>
+            <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancelar</button>
+            <button class="btn-primary" onclick="submitNewInvoice()" id="createInvoiceBtn">Crear Factura</button>
         </div>
     </div>
 </div>
@@ -844,6 +845,7 @@
                         <input type="checkbox" class="row-checkbox" value="${index}">
                     </div>
                 </td>
+                <td style="font-weight: 500;">${invoice['ID Factura Dinámica'] || ''}</td>
                 <td style="font-weight: 500;">${invoice['Cliente']}</td>
                 <td>${invoice['Candidato']}</td>
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>

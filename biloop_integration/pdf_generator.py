@@ -29,17 +29,17 @@ def create_invoice_pdf(invoice_data, invoice_id, output_dir="invoices"):
     elements = []
     
     # Header: Company details (Mocked for now)
-    elements.append(Paragraph("<b>YOUR COMPANY NAME</b>", title_style))
+    elements.append(Paragraph("<b>NOMBRE DE SU EMPRESA</b>", title_style))
     elements.append(Paragraph("123 Business Rd, City, Country", styles['Normal']))
     elements.append(Spacer(1, 20))
     
     # Invoice Details
-    elements.append(Paragraph(f"<b>INVOICE #{invoice_id}</b>", styles['Heading2']))
-    elements.append(Paragraph(f"<b>Date:</b> {invoice_data.get('Fecha Factura', '')}", styles['Normal']))
+    elements.append(Paragraph(f"<b>ID FACTURA #{invoice_id}</b>", styles['Heading2']))
+    elements.append(Paragraph(f"<b>Fecha:</b> {invoice_data.get('Fecha Factura', '')}", styles['Normal']))
     elements.append(Spacer(1, 20))
     
     # Bill To
-    elements.append(Paragraph("<b>BILL TO:</b>", styles['Heading3']))
+    elements.append(Paragraph("<b>FACTURAR A:</b>", styles['Heading3']))
     elements.append(Paragraph(f"{invoice_data.get('Cliente', '')}", styles['Normal']))
     elements.append(Spacer(1, 20))
     
@@ -49,8 +49,8 @@ def create_invoice_pdf(invoice_data, invoice_id, output_dir="invoices"):
     
     # Define table data
     table_data = [
-        ["Description", "Amount (EUR)"],
-        [f"Recruitment Fee for {position}\n({cand_name})", f"{invoice_data.get('Importe factura', 0):,.2f}"],
+        ["Proceso", "Importe (EUR)"],
+        [f"Honorarios de selección por {position}\n({cand_name})", f"{invoice_data.get('Importe factura', 0):,.2f}"],
     ]
     
     # Create main table
@@ -70,9 +70,9 @@ def create_invoice_pdf(invoice_data, invoice_id, output_dir="invoices"):
     
     # Totals Section
     totals_data = [
-        ["Subtotal:", f"EUR {invoice_data.get('Factura neta', 0):,.2f}"],
-        ["VAT/IVA:", f"EUR {invoice_data.get('IVA', 0):,.2f}"],
-        ["TOTAL DUE:", f"EUR {invoice_data.get('Importe Cobro', 0):,.2f}"]
+        ["Factura neta:", f"EUR {invoice_data.get('Factura neta', 0):,.2f}"],
+        ["IVA:", f"EUR {invoice_data.get('IVA', 0):,.2f}"],
+        ["IMPORTE COBRO:", f"EUR {invoice_data.get('Importe Cobro', 0):,.2f}"]
     ]
     
     totals_table = Table(totals_data, colWidths=[350, 100])
@@ -86,9 +86,9 @@ def create_invoice_pdf(invoice_data, invoice_id, output_dir="invoices"):
     elements.append(Spacer(1, 40))
     
     # Footer
-    elements.append(Paragraph("Thank you for your business!", title_style))
-    elements.append(Paragraph("Payment Terms: Please pay within 30 days of the invoice date.", styles['Normal']))
-    elements.append(Paragraph("Bank Details: IBAN XX00 0000 0000 0000 0000 00", styles['Normal']))
+    elements.append(Paragraph("¡Gracias por su confianza!", title_style))
+    elements.append(Paragraph("Condiciones de pago: Por favor, realice el pago en un plazo de 30 días a partir de la fecha de la factura.", styles['Normal']))
+    elements.append(Paragraph("Datos bancarios: IBAN XX00 0000 0000 0000 0000 00", styles['Normal']))
     
     # Build PDF
     doc.build(elements)
