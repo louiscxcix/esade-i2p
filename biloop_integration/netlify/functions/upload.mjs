@@ -6,12 +6,13 @@ export default async (req) => {
   }
 
   try {
-    const invoiceData = await req.json();
-    if (!invoiceData) {
+    const payload = await req.json();
+    if (!payload) {
       return Response.json({ error: 'No invoice data provided.' }, { status: 400 });
     }
 
-    const result = await pushInvoiceToBiloop(invoiceData);
+    const downloadPdf = !!payload.downloadPdf;
+    const result = await pushInvoiceToBiloop(payload, downloadPdf);
     return Response.json(result, { status: result.success ? 200 : 500 });
   } catch (error) {
     console.error('Upload error:', error);

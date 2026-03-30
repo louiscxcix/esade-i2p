@@ -1385,7 +1385,7 @@
         }
     }
 
-    async function uploadInvoice(index) {
+    async function uploadInvoice(index, downloadPdf = false) {
         const invoiceData = globalData[index];
         const statusBadge = document.getElementById(`status-${index}`);
         const btn = document.getElementById(`btn-${index}`);
@@ -1395,10 +1395,11 @@
         btn.disabled = true;
         
         try {
+            const reqBody = { ...invoiceData, downloadPdf };
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(invoiceData)
+                body: JSON.stringify(reqBody)
             });
             
             const result = await response.json();
@@ -1407,16 +1408,19 @@
                 statusBadge.className = 'status-badge success';
                 statusBadge.innerText = 'Subido ✓';
                 btn.innerText = 'Hecho';
+                return result;
             } else {
                 statusBadge.className = 'status-badge error';
                 statusBadge.innerText = 'Error ✗';
                 btn.disabled = false;
                 btn.innerText = 'Reintentar';
+                return null;
             }
         } catch (error) {
             statusBadge.className = 'status-badge error';
             statusBadge.innerText = 'Error ✗';
             btn.disabled = false;
+            return null;
         }
     }
 
@@ -1430,15 +1434,33 @@
         btnSave.disabled = true;
         btnSave.innerHTML = 'Guardando...';
 
-        // 1. Send data to Biloop
-        await uploadInvoice(index);
+        try {
+            // 1. Send data to Biloop with downloadPdf flag = true
+            const result = await uploadInvoice(index, true);
 
-        // 2. Mock Download invoice
-        // The file download endpoint isn't wired to Biloop yet, per user request.
-        showToast("Factura enviada. La descarga del PDF está en desarrollo.", "success");
+            // 2. Download invoice if successful and pdf is present
+            if (result && result.success) {
+                if (result.pdfBase64) {
+                    const link = document.createElement('a');
+                    link.href = `data:application/pdf;base64,${result.pdfBase64}`;
+                    link.download = result.fileName || `Factura_${globalData[index].Cliente}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast("Factura descargada con éxito.", "success");
+                } else {
+                    showToast("Factura enviada, pero no tiene PDF disponible.", "warning");
+                }
+            } else {
+                showToast("Fallo al guardar la factura en Biloop.", "error");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Error inesperado en saveAndDownloadInvoice.", "error");
+        }
 
-        btnSave.disabled = false;
         btnSave.innerHTML = originalText;
+        btnSave.disabled = false;
     }
 
     async function uploadSelected() {
