@@ -118,10 +118,10 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     invoice_description: detailedDescription,
     
     // Financials
-    base: totalAmt,
-    ordinary_vat_base: totalAmt,
-    ordinary_vat_total: 0,
-    vat_total: 0,
+    base: baseAmt,
+    ordinary_vat_base: baseAmt,
+    ordinary_vat_total: vatAmt,
+    vat_total: vatAmt,
     total: totalAmt,
     
     // Lines
@@ -135,18 +135,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
         units: 1,
         price: baseAmt,
         discount: discountPct,
-        vat_type_id: "EXENTO"
-      },
-      {
-        company_id: "E67652",
-        product_id: 2,
-        real_product_id: "2",
-        product_name: "IVA Calculation (21%)",
-        description: "VAT added as a line item from Spreadsheet",
-        units: 1,
-        price: vatAmt,
-        discount: 0,
-        vat_type_id: "EXENTO"
+        vat_type_id: "ORD21"
       }
     ]
   };
