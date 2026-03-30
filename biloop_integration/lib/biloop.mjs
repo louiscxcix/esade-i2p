@@ -42,7 +42,7 @@ async function getClientNif(clientName, token) {
   const nameQuery = clientName.toLowerCase().trim();
   
   try {
-    const res = await fetch(`${BILOOP_BASE_URL}/erp/masters/clients/getClients?company_id=E67652`, {
+    const res = await fetch(`${BILOOP_BASE_URL}/billing/getERPCustomers?Company_id=E67652`, {
       method: 'GET',
       headers: { token, SUBSCRIPTION_KEY }
     });
