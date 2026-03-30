@@ -37,10 +37,7 @@ def clean_currency(val):
     if isinstance(val, (int, float)):
         return float(val)
     if isinstance(val, str):
-        val = val.replace('€', '').strip()
-        # European format: 10.500,50
-        val = val.replace('.', '')  # remove thousands separator
-        val = val.replace(',', '.') # use dot as decimal separator
+        val = val.replace('€', '').replace(',', '').strip()
     try:
         return float(val)
     except ValueError:
@@ -65,7 +62,7 @@ def fetch_google_sheets_data():
         response = requests.get(CSV_URL_1)
         response.raise_for_status()
         csv_content = response.content.decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_content), header=3, decimal=',', thousands='.')
+        df = pd.read_csv(io.StringIO(csv_content), header=3)
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=['Invoice ID'])
         
@@ -176,7 +173,7 @@ def fetch_margin_data_from_sheet1():
         response = requests.get(CSV_URL_1)
         response.raise_for_status()
         csv_content = response.content.decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_content), header=3, decimal=',', thousands='.')
+        df = pd.read_csv(io.StringIO(csv_content), header=3)
         df.columns = [str(c).strip() for c in df.columns]
         df = df.dropna(subset=['Invoice ID'])
         

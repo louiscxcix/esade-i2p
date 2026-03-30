@@ -1196,7 +1196,7 @@
                     <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
                            data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}">
                 </td>
-                <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
                     <select class="status-select ${statusClass}" id="status-${index}"
                             data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
@@ -1239,7 +1239,7 @@
         const pending = total - paid - overdue;
 
         document.getElementById('statTotal').textContent   = total;
-        document.getElementById('statAmount').textContent  = '€ ' + totalAmt.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+        document.getElementById('statAmount').textContent  = '€ ' + totalAmt.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0});
         document.getElementById('statPaid').textContent    = paid;
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statOverdue').textContent = overdue;
