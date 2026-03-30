@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biloop Integration Dashboard</title>
+    <title>Panel de Integración Biloop</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -796,23 +796,23 @@
 <div class="sidebar">
     <div class="sidebar-header">
         <h2>Biloop Hub</h2>
-        <p class="sidebar-tagline">Recruitment Finance Platform</p>
+        <p class="sidebar-tagline">Plataforma Financiera de Selección</p>
     </div>
     <div class="nav-menu">
         <div class="nav-item active" onclick="switchView('appView', this)">
-            📄 My Invoices
+            📄 Mis Facturas
         </div>
         <div class="nav-item" onclick="switchView('marginView', this)">
-            💰 Recruiter Margins
+            💰 Márgenes de Reclutadores
         </div>
         <div class="nav-item" onclick="switchView('sheetsView', this)">
-            📋 Raw Data (Sheet)
+            📋 Datos en Bruto
         </div>
         <div class="nav-item" onclick="switchView('lookerView', this)">
-            📊 Analytics Dashboard
+            📊 Panel de Control
         </div>
         <div class="nav-item" onclick="switchView('copilotView', this)">
-            ✨ Smart Assistant
+            ✨ Asistente Inteligente
         </div>
     </div>
     <div class="sidebar-footer">ESADE i2P &middot; v1.0</div>
@@ -826,24 +826,24 @@
         <div class="container">
             <header>
                 <div>
-                    <h1>My Invoices</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Review and manage your placement invoices</p>
+                    <h1>Mis Facturas</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Revisa y gestiona tus facturas de colocación</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ New Invoice
+                        ➕ Nueva Factura
                     </button>
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
-                        🔄 Refresh
+                        🔄 Actualizar
                     </button>
-                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);" title="Save any invoice date changes you made in the table">
-                        💾 Save Invoice Dates
+                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);" title="Guarda cualquier cambio de fecha de factura de la tabla">
+                        💾 Guardar Fechas
                     </button>
-                    <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Save any status or estimated payment date changes">
-                        ✏️ Save Changes
+                    <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Guarda cualquier cambio de estado o fecha estimada de pago">
+                        ✏️ Guardar Cambios
                     </button>
-                    <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn" title="Only sends the checked (☑) invoices to Biloop">
-                        ☁️ Send to Biloop
+                    <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn" title="Solo envía las facturas marcadas (☑) a Biloop">
+                        ☁️ Enviar a Biloop
                     </button>
                 </div>
             </header>
@@ -851,23 +851,23 @@
             <!-- Stats bar -->
             <div class="stats-bar" id="statsBar" style="display:none;">
                 <div class="stat-card">
-                    <span class="stat-card-label">📊 Total Invoices</span>
+                    <span class="stat-card-label">📊 Total Facturas</span>
                     <span class="stat-card-value" id="statTotal">—</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-label">💶 Total Amount</span>
+                    <span class="stat-card-label">💶 Importe Total</span>
                     <span class="stat-card-value" id="statAmount">—</span>
                 </div>
                 <div class="stat-card paid">
-                    <span class="stat-card-label">✅ Paid</span>
+                    <span class="stat-card-label">✅ Pagado</span>
                     <span class="stat-card-value" id="statPaid">—</span>
                 </div>
                 <div class="stat-card pending">
-                    <span class="stat-card-label">⏳ Pending</span>
+                    <span class="stat-card-label">⏳ Pendiente</span>
                     <span class="stat-card-value" id="statPending">—</span>
                 </div>
                 <div class="stat-card overdue">
-                    <span class="stat-card-label">⚠️ Overdue</span>
+                    <span class="stat-card-label">⚠️ Vencido</span>
                     <span class="stat-card-value" id="statOverdue">—</span>
                 </div>
             </div>
@@ -876,15 +876,15 @@
             <div class="workflow-hint" id="workflowHint" style="display:none;">
                 <span style="font-size:1.2rem;">ℹ️</span>
                 <div class="steps">
-                    <div class="hint-step"><div class="hint-step-num">1</div> Edit dates or status in the table</div>
-                    <div class="hint-step"><div class="hint-step-num">2</div> Click <strong style="color:var(--text-main);">Save Invoice Dates</strong> or <strong style="color:var(--text-main);">Save Changes</strong></div>
-                    <div class="hint-step"><div class="hint-step-num">3</div> Tick ☑ then click <strong style="color:var(--text-main);">Send to Biloop</strong> to upload</div>
+                    <div class="hint-step"><div class="hint-step-num">1</div> Edita fechas o estados en la tabla</div>
+                    <div class="hint-step"><div class="hint-step-num">2</div> Haz clic en <strong style="color:var(--text-main);">Guardar Fechas</strong> o <strong style="color:var(--text-main);">Guardar Cambios</strong></div>
+                    <div class="hint-step"><div class="hint-step-num">3</div> Marca ☑ y haz clic en <strong style="color:var(--text-main);">Enviar a Biloop</strong> para subir</div>
                 </div>
             </div>
             <div class="table-container">
                 <div id="loader" class="loader" style="flex-direction:column;">
                     <div class="spinner"></div>
-                    <span class="loader-label">Loading your invoices…</span>
+                    <span class="loader-label">Cargando tus facturas...</span>
                 </div>
                 
                 <table id="invoiceTable" style="display: none;">
@@ -895,20 +895,20 @@
                                     <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
                                 </div>
                             </th>
-                            <th>Client</th>
-                            <th>Candidate</th>
-                            <th>Position</th>
+                            <th>Cliente</th>
+                            <th>Candidato</th>
+                            <th>Posición</th>
                             <th class="date-col-header">
-                                📅 Invoice Date
-                                <span class="date-hint">Edit, then click Save Invoice Dates</span>
+                                📅 Fecha Factura
+                                <span class="date-hint">Edita y haz clic en Guardar Fechas</span>
                             </th>
                             <th class="est-date-col-header">
-                                🗓 Est. Payment Date
-                                <span class="date-hint">Edit, then click Save Changes</span>
+                                🗓 Fecha Est. Pago
+                                <span class="date-hint">Edita y haz clic en Guardar Cambios</span>
                             </th>
-                            <th>Invoice Amount</th>
-                            <th>Status</th>
-                            <th>Send</th>
+                            <th>Importe Factura</th>
+                            <th>Estado</th>
+                            <th>Enviar</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -918,27 +918,27 @@
         </div>
     </div>
 
-    <!-- View 2: Recruiter Margins -->
+    <!-- View 2: Márgenes de Reclutadores -->
     <div id="marginView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
-                    <h1>Recruiter Margins</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Track and update recruiter fees and commissions</p>
+                    <h1>Márgenes de Reclutadores</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Seguimiento y actualización de tarifas y comisiones</p>
                 </div>
                 <div class="header-actions">
                     <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ New Invoice
+                        ➕ Nueva Factura
                     </button>
                     <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
-                        🔄 Refresh
+                        🔄 Actualizar
                     </button>
                 </div>
             </header>
 
             <div class="tip-banner">
                 <span style="font-size:1.1rem;">💡</span>
-                <span>Click any field in the table to edit it, then press <strong style="color:var(--text-main);">💾 Save</strong> on that row to update the spreadsheet.</span>
+                <span>Haz clic en cualquier campo para editarlo y pulsa <strong style="color:var(--text-main);">💾 Guardar</strong> para actualizar la hoja de cálculo.</span>
             </div>
 
             <div class="table-container">
@@ -949,23 +949,23 @@
                 <table id="marginTable" style="display: none;">
                     <thead>
                         <tr>
-                            <th>Invoice ID</th>
-                            <th>Client</th>
-                            <th>Candidate</th>
-                            <th>Recruiter Name</th>
-                            <th class="margin-key-col-header">💰 Margin
-                                <span class="date-hint">Key metric</span>
+                            <th>ID Factura</th>
+                            <th>Cliente</th>
+                            <th>Candidato</th>
+                            <th>Nombre Reclutador</th>
+                            <th class="margin-key-col-header">💰 Margen
+                                <span class="date-hint">Métrica clave</span>
                             </th>
-                            <th class="margin-key-col-header">💰 Recruiter Comm.
-                                <span class="date-hint">Key metric</span>
+                            <th class="margin-key-col-header">💰 Com. Reclutador
+                                <span class="date-hint">Métrica clave</span>
                             </th>
-                            <th>Collected by BT</th>
-                            <th>Invoice Ref.</th>
-                            <th class="margin-key-col-header">💰 Gross Amount
-                                <span class="date-hint">Key metric</span>
+                            <th>Cobrado por BT</th>
+                            <th>Ref. Factura</th>
+                            <th class="margin-key-col-header">💰 Importe Bruto
+                                <span class="date-hint">Métrica clave</span>
                             </th>
-                            <th>VAT</th>
-                            <th style="width: 80px;">Save</th>
+                            <th>IVA</th>
+                            <th style="width: 80px;">Guardar</th>
                         </tr>
                     </thead>
                     <tbody id="marginTableBody">
@@ -985,35 +985,35 @@
         <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_s33znkum1d" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
     </div>
 
-    <!-- View 5: Smart Assistant -->
+    <!-- View 5: Asistente Inteligente -->
     <div id="copilotView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
-                    <h1>✨ Smart Assistant</h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">Ask anything about your invoices, payments, or recruiter performance</p>
+                    <h1>✨ Asistente Inteligente</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Pregunta cualquier cosa sobre tus facturas, pagos o rendimiento</p>
                 </div>
             </header>
 
             <div class="chip-grid">
-                <button class="chip" onclick="fillChip(this.textContent)">💰 Which invoices are unpaid?</button>
-                <button class="chip" onclick="fillChip(this.textContent)">👤 Who is our top billing recruiter?</button>
-                <button class="chip" onclick="fillChip(this.textContent)">📅 What’s due for payment this month?</button>
-                <button class="chip" onclick="fillChip(this.textContent)">📊 What’s the total revenue this quarter?</button>
-                <button class="chip" onclick="fillChip(this.textContent)">⚠️ Which invoices are overdue?</button>
-                <button class="chip" onclick="fillChip(this.textContent)">🔍 Show me all invoices for a specific client</button>
+                <button class="chip" onclick="fillChip(this.textContent)">💰 ¿Qué facturas están sin pagar?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">👤 ¿Quién es nuestro mejor reclutador?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">📅 ¿Qué vence para pago este mes?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">📊 ¿Ingresos totales este trimestre?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">⚠️ ¿Qué facturas están vencidas?</button>
+                <button class="chip" onclick="fillChip(this.textContent)">🔍 Facturas de un cliente específico</button>
             </div>
 
             <div class="table-container" style="padding: 24px; display: flex; flex-direction: column; height: 58vh;">
                 <div id="chatHistory" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
                     <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124,58,237,0.2); padding: 16px; border-radius: 12px; color: var(--text-main); align-self: flex-start; max-width: 80%;">
-                        ✨ Hi there! I’m your Smart Assistant, powered by Gemini AI. I can read your live invoice and recruiter data to answer questions instantly.<br><br>
-                        <span style="color:var(--text-muted); font-size:0.88rem;">Try one of the examples above, or type your own question below.</span>
+                        ✨ ¡Hola! Soy tu Asistente Inteligente, con tecnología Gemini AI. Puedo leer tus datos para responder preguntas al instante.<br><br>
+                        <span style="color:var(--text-muted); font-size:0.88rem;">Prueba uno de los ejemplos arriba o escribe tu propia pregunta abajo.</span>
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px;">
-                    <input type="text" id="chatInput" placeholder="Type a question or click an example above…" style="flex: 1; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;" onkeypress="handleChatKeyPress(event)">
-                    <button class="btn-primary" onclick="sendMessage()" id="sendBtn">✨ Ask</button>
+                    <input type="text" id="chatInput" placeholder="Escribe una pregunta o haz clic en un ejemplo..." style="flex: 1; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;" onkeypress="handleChatKeyPress(event)">
+                    <button class="btn-primary" onclick="sendMessage()" id="sendBtn">✨ Preguntar</button>
                 </div>
             </div>
         </div>
@@ -1021,45 +1021,45 @@
 
 </div>
 
-<!-- New Invoice Modal -->
+<!-- Nueva Factura Modal -->
 <div id="newInvoiceModal" class="modal-overlay">
     <div class="modal">
-        <h2>➕ Create New Invoice</h2>
+        <h2>➕ Crear Nueva Factura</h2>
         <div class="modal-field">
-            <label>Client Name *</label>
-            <input type="text" id="newClientName" placeholder="e.g. ACME Corp">
+            <label>Nombre Cliente *</label>
+            <input type="text" id="newClientName" placeholder="ej. ACME Corp">
         </div>
         <div class="modal-field">
-            <label>Position</label>
-            <input type="text" id="newPosition" placeholder="e.g. Senior Developer">
+            <label>Posición</label>
+            <input type="text" id="newPosition" placeholder="ej. Desarrollador Senior">
         </div>
         <div class="modal-field">
-            <label>Candidate Name *</label>
-            <input type="text" id="newCandidateName" placeholder="e.g. John Doe">
+            <label>Nombre Candidato *</label>
+            <input type="text" id="newCandidateName" placeholder="ej. Juan Pérez">
         </div>
         <div class="modal-field">
-            <label>Start Date</label>
+            <label>Fecha Inicio</label>
             <input type="date" id="newStartDate">
         </div>
         <div class="modal-field">
-            <label>Fix Salary (€)</label>
-            <input type="number" id="newFixSalary" step="0.01" placeholder="e.g. 50000">
+            <label>Salario Fijo (€)</label>
+            <input type="number" id="newFixSalary" step="0.01" placeholder="ej. 50000">
         </div>
         <div class="modal-field">
-            <label>Invoice Date</label>
+            <label>Fecha Factura</label>
             <input type="date" id="newInvoiceDate">
         </div>
         <div class="modal-field">
-            <label>Fee %</label>
-            <input type="text" id="newFeePercent" placeholder="e.g. 20%">
+            <label>Tarifa %</label>
+            <input type="text" id="newFeePercent" placeholder="ej. 20%">
         </div>
         <div class="modal-field">
-            <label>Invoice Amount (€)</label>
-            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="e.g. 10000">
+            <label>Importe Factura (€)</label>
+            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="ej. 10000">
         </div>
         <div class="modal-actions">
-            <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancel</button>
-            <button class="btn-primary" onclick="submitNewInvoice()" id="createInvoiceBtn">Create Invoice</button>
+            <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancelar</button>
+            <button class="btn-primary" onclick="submitNewInvoice()" id="createInvoiceBtn">Crear Factura</button>
         </div>
     </div>
 </div>
@@ -1108,11 +1108,11 @@
                 renderTable(data);
                 table.style.display = 'table';
             } else {
-                alert('Error fetching data: ' + data.error);
+                alert('Error al obtener datos: ' + data.error);
             }
         } catch (error) {
-            console.error('Failed to fetch:', error);
-            alert('Failed to connect to the backend server.');
+            console.error('Error al cargar:', error);
+            alert('Error al conectar con el servidor.');
         } finally {
             loader.style.display = 'none';
             refreshBtn.disabled = false;
@@ -1158,6 +1158,23 @@
                 estPayFormatted = estPayRaw;
             }
 
+            // Build the Invoice display ID like 20260301-01 based on date and index
+            let displayInvoiceId = '';
+            const dt = formattedDate; // YYYY-MM-DD
+            if (dt && dt.includes('-')) {
+                const parts = dt.split('-');
+                if (parts.length === 3) {
+                    const yyyy = parts[0];
+                    const mm = parts[1].padStart(2, '0');
+                    const dd = parts[2].padStart(2, '0');
+                    const seq = String(index + 1).padStart(2, '0');
+                    displayInvoiceId = `${yyyy}${mm}${dd}-${seq}`;
+                }
+            }
+            if (!displayInvoiceId) {
+                displayInvoiceId = `REQ-${String(index + 1).padStart(2, '0')}`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
@@ -1165,7 +1182,10 @@
                         <input type="checkbox" class="row-checkbox" value="${index}">
                     </div>
                 </td>
-                <td style="font-weight: 500;">${invoice['Cliente']}</td>
+                <td style="font-weight: 500;">
+                    <span style="color: var(--text-muted); font-size: 0.8rem; margin-right: 8px; font-family: monospace;">${displayInvoiceId}</span>
+                    ${invoice['Cliente']}
+                </td>
                 <td>${invoice['Candidato']}</td>
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>
                 <td>
@@ -1181,15 +1201,15 @@
                     <select class="status-select ${statusClass}" id="status-${index}"
                             data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
                             onchange="updateStatusSelectStyle(this)">
-                        <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pending</option>
-                        <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Paid</option>
-                        <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Overdue</option>
-                        <option value="Cancelled" ${/cancelled/i.test(sheetStatus) ? 'selected' : ''}>Cancelled</option>
+                        <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Pagada</option>
+                        <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Vencida</option>
+                        <option value="Cancelled" ${/cancelled/i.test(sheetStatus) ? 'selected' : ''}>Cancelada</option>
                     </select>
                 </td>
                 <td>
                     <button class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="uploadSingle(${index})" id="btn-${index}">
-                        Upload
+                        Subir
                     </button>
                 </td>
             `;
@@ -1266,13 +1286,13 @@
         const updates = Object.values(rowMap);
 
         if (updates.length === 0) {
-            showToast('No status or estimated date changes to save.', 'error');
+            showToast('No hay cambios en el estado o fecha estimada para guardar.', 'error');
             return;
         }
 
         const btn = document.getElementById('saveFieldsBtn');
         btn.disabled = true;
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '⏳ Guardando...';
 
         try {
             const response = await fetch('/api/update_invoice_fields', {
@@ -1286,18 +1306,18 @@
                 // Mark saved values as the new originals
                 statusSelects.forEach(sel => sel.setAttribute('data-original', sel.value));
                 estDateInputs.forEach(input => input.setAttribute('data-original', input.value));
-                showToast(`${updates.length} row(s) updated successfully!`);
+                showToast(`${updates.length} fila(s) actualizada(s) con éxito!`);
                 // Refresh sheets iframe
                 const sheetsIframe = document.querySelector('#sheetsView iframe');
                 if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
-                showToast('Failed to save: ' + result.message, 'error');
+                showToast('Error al guardar: ' + result.message, 'error');
             }
         } catch (error) {
-            showToast('Failed to connect to server', 'error');
+            showToast('Error al conectar con el servidor', 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '✏️ Save Status & Est. Dates';
+            btn.innerHTML = '✏️ Guardar Cambios';
         }
     }
 
@@ -1323,13 +1343,13 @@
         });
         
         if (updates.length === 0) {
-            showToast('No date changes to save.', 'error');
+            showToast('No hay cambios de fecha para guardar.', 'error');
             return;
         }
         
         const btn = document.getElementById('saveDatesBtn');
         btn.disabled = true;
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '⏳ Guardando...';
         
         try {
             const response = await fetch('/api/update_dates', {
@@ -1344,19 +1364,19 @@
                 dateInputs.forEach(input => {
                     input.setAttribute('data-original', input.value);
                 });
-                showToast(`${updates.length} date(s) updated successfully!`);
+                showToast(`${updates.length} fecha(s) actualizada(s) con éxito!`);
                 
                 // Refresh iframes
                 const sheetsIframe = document.querySelector('#sheetsView iframe');
                 if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
-                showToast('Failed to save dates: ' + result.message, 'error');
+                showToast('Error al guardar fechas: ' + result.message, 'error');
             }
         } catch (error) {
-            showToast('Failed to connect to server', 'error');
+            showToast('Error al conectar con el servidor', 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '💾 Update Dates';
+            btn.innerHTML = '💾 Guardar Fechas';
         }
     }
 
@@ -1366,7 +1386,7 @@
         const btn = document.getElementById(`btn-${index}`);
         
         statusBadge.className = 'status-badge';
-        statusBadge.innerText = 'Uploading...';
+        statusBadge.innerText = 'Subiendo...';
         btn.disabled = true;
         
         try {
@@ -1380,13 +1400,13 @@
             
             if (response.ok && result.success) {
                 statusBadge.className = 'status-badge success';
-                statusBadge.innerText = 'Uploaded ✓';
-                btn.innerText = 'Done';
+                statusBadge.innerText = 'Subido ✓';
+                btn.innerText = 'Hecho';
             } else {
                 statusBadge.className = 'status-badge error';
-                statusBadge.innerText = 'Failed ✗';
+                statusBadge.innerText = 'Error ✗';
                 btn.disabled = false;
-                btn.innerText = 'Retry';
+                btn.innerText = 'Reintentar';
             }
         } catch (error) {
             statusBadge.className = 'status-badge error';
@@ -1404,13 +1424,13 @@
         const uploadBtn = document.getElementById('uploadBtn');
         
         if (checkboxes.length === 0) {
-            alert('Please select at least one invoice to upload.');
+            alert('Por favor, selecciona al menos una factura para subir.');
             return;
         }
         
         uploadBtn.disabled = true;
         const originalText = uploadBtn.innerHTML;
-        uploadBtn.innerHTML = 'Uploading...';
+        uploadBtn.innerHTML = 'Subiendo...';
         
         for (let i = 0; i < checkboxes.length; i++) {
             const index = checkboxes[i].value;
@@ -1516,16 +1536,16 @@
             const result = await response.json();
             
             if (response.ok && result.success) {
-                showToast(`Row ${record._invoice_id} updated!`);
+                showToast(`¡Fila ${record._invoice_id} actualizada!`);
                 btn.textContent = '✓';
                 setTimeout(() => { btn.textContent = '💾'; btn.disabled = false; }, 1500);
             } else {
-                showToast('Update failed: ' + result.message, 'error');
+                showToast('Error al actualizar: ' + result.message, 'error');
                 btn.textContent = '💾';
                 btn.disabled = false;
             }
         } catch (error) {
-            showToast('Server connection failed', 'error');
+            showToast('Error de conexión con el servidor', 'error');
             btn.textContent = '💾';
             btn.disabled = false;
         }
@@ -1549,13 +1569,13 @@
         const candidateName = document.getElementById('newCandidateName').value.trim();
         
         if (!clientName || !candidateName) {
-            alert('Client Name and Candidate Name are required.');
+            alert('El Nombre del Cliente y el Nombre del Candidato son obligatorios.');
             return;
         }
         
         const btn = document.getElementById('createInvoiceBtn');
         btn.disabled = true;
-        btn.textContent = 'Creating...';
+        btn.textContent = 'Creando...';
         
         // Convert dates from YYYY-MM-DD to DD/MM/YYYY
         function formatDate(val) {
@@ -1586,7 +1606,7 @@
             const result = await response.json();
             
             if (response.ok && result.success) {
-                showToast(`Invoice ${result.invoice_id} created!`);
+                showToast(`¡Factura ${result.invoice_id} creada!`);
                 closeNewInvoiceModal();
                 // Refresh both pages
                 fetchData();
@@ -1595,13 +1615,13 @@
                 const sheetsIframe = document.querySelector('#sheetsView iframe');
                 if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
-                showToast('Failed: ' + result.message, 'error');
+                showToast('Error: ' + result.message, 'error');
             }
         } catch (error) {
-            showToast('Server connection failed', 'error');
+            showToast('Error de conexión con el servidor', 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Create Invoice';
+            btn.textContent = 'Crear Factura';
         }
     }
 
@@ -1618,7 +1638,7 @@
         
         const sendBtn = document.getElementById('sendBtn');
         sendBtn.disabled = true;
-        sendBtn.innerText = 'Thinking...';
+        sendBtn.innerText = 'Pensando...';
         
         try {
             const response = await fetch('/api/copilot', {
@@ -1636,10 +1656,10 @@
                 appendMessage('Error: ' + data.message, 'error');
             }
         } catch (error) {
-            appendMessage('Failed to reach the AI server.', 'error');
+            appendMessage('No se pudo conectar con el servidor de IA.', 'error');
         } finally {
             sendBtn.disabled = false;
-            sendBtn.innerText = 'Send ✨';
+            sendBtn.innerText = 'Preguntar ✨';
         }
     }
 
