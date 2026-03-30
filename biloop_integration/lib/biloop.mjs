@@ -50,7 +50,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   const payload = {
     company_id: "E67652",
     master_name: invoiceJson.Cliente || 'Unknown Client',
-    master_nif: "B12345678", // Needs actual NIF mapping when ready
+    master_nif: "B99999999", // Using a dummy NIF instead of B12345678 to prevent OPTARE mapping
     address: "Biloop Integration Address",
     date: dateStr,
     operation_date: dateStr,
