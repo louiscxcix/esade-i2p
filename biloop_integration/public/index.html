@@ -908,7 +908,7 @@
                             </th>
                             <th>Importe Factura</th>
                             <th>Estado</th>
-                            <th>Enviar</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -1196,7 +1196,7 @@
                     <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
                            data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}">
                 </td>
-                <td class="currency">€${invoice['Importe Cobro'].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
                 <td>
                     <select class="status-select ${statusClass}" id="status-${index}"
                             data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
@@ -1208,9 +1208,14 @@
                     </select>
                 </td>
                 <td>
-                    <button class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="uploadSingle(${index})" id="btn-${index}">
-                        Subir
-                    </button>
+                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                        <button class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="uploadSingle(${index})" id="btn-${index}">
+                            ☁️ Enviar a Biloop
+                        </button>
+                        <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="saveAndDownloadInvoice(${index})" id="btn-save-${index}">
+                            💾 Guardar Factura
+                        </button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1228,13 +1233,13 @@
 
     function updateStatsBar(data) {
         const total = data.length;
-        const totalAmt = data.reduce((sum, inv) => sum + (inv['Importe Cobro'] || 0), 0);
+        const totalAmt = data.reduce((sum, inv) => sum + (inv['Importe factura'] || 0), 0);
         const paid    = data.filter(inv => /paid/i.test(inv['Status']) && !/overdue/i.test(inv['Status'])).length;
         const overdue = data.filter(inv => /overdue/i.test(inv['Status'])).length;
         const pending = total - paid - overdue;
 
         document.getElementById('statTotal').textContent   = total;
-        document.getElementById('statAmount').textContent  = '€' + totalAmt.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+        document.getElementById('statAmount').textContent  = '€ ' + totalAmt.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 2});
         document.getElementById('statPaid').textContent    = paid;
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statOverdue').textContent = overdue;
@@ -1417,6 +1422,23 @@
 
     function uploadSingle(index) {
         uploadInvoice(index);
+    }
+
+    async function saveAndDownloadInvoice(index) {
+        const btnSave = document.getElementById(`btn-save-${index}`);
+        const originalText = btnSave.innerHTML;
+        btnSave.disabled = true;
+        btnSave.innerHTML = 'Guardando...';
+
+        // 1. Send data to Biloop
+        await uploadInvoice(index);
+
+        // 2. Mock Download invoice
+        // The file download endpoint isn't wired to Biloop yet, per user request.
+        showToast("Factura enviada. La descarga del PDF está en desarrollo.", "success");
+
+        btnSave.disabled = false;
+        btnSave.innerHTML = originalText;
     }
 
     async function uploadSelected() {
