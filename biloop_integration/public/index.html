@@ -788,6 +788,22 @@
             transform: translateY(-1px);
         }
 
+        /* Unsaved styling */
+        tr.unsaved td {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            border-bottom-color: rgba(239, 68, 68, 0.2);
+        }
+        .pulse-red {
+            background-color: var(--error) !important;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4) !important;
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
     </style>
 </head>
 <body>
@@ -1114,6 +1130,42 @@
         });
     }
 
+    function checkUnsavedChanges() {
+        let hasUnsaved = false;
+        document.querySelectorAll('.invoice-row').forEach(tr => {
+            let rowUnsaved = false;
+            const dateInput = tr.querySelector('.date-input');
+            const estDateInput = tr.querySelector('.est-date-input');
+            const statusSelect = tr.querySelector('.status-select');
+            
+            if (dateInput && dateInput.value !== dateInput.getAttribute('data-original')) {
+                rowUnsaved = true;
+            }
+            if (estDateInput && estDateInput.value !== estDateInput.getAttribute('data-original')) {
+                rowUnsaved = true;
+            }
+            if (statusSelect && statusSelect.value !== statusSelect.getAttribute('data-original')) {
+                rowUnsaved = true;
+            }
+            
+            if (rowUnsaved) {
+                tr.classList.add('unsaved');
+                hasUnsaved = true;
+            } else {
+                tr.classList.remove('unsaved');
+            }
+        });
+        
+        const saveBtn = document.getElementById('saveFieldsBtn');
+        if (saveBtn) {
+            if (hasUnsaved) {
+                saveBtn.classList.add('pulse-red');
+            } else {
+                saveBtn.classList.remove('pulse-red');
+            }
+        }
+    }
+
     // ===== Invoice Upload Logic =====
     async function fetchData() {
         const loader = document.getElementById('loader');
@@ -1217,16 +1269,19 @@
                 </td>
                 <td>${invoice['Candidato']}</td>
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>
-                <td style="font-family: monospace; color: var(--text-main);">${formattedDate}</td>
+                <td>
+                    <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
+                           data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
+                </td>
                 <td>
                     <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
-                           data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}">
+                           data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
                 </td>
                 <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
                     <select class="status-select ${statusClass}" id="status-${index}"
                             data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
-                            onchange="updateStatusSelectStyle(this)">
+                            onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
                         <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pendiente</option>
                         <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Pagada</option>
                         <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Vencida</option>
@@ -1250,6 +1305,7 @@
         updateStatsBar(data);
         document.getElementById('statsBar').style.display = 'flex';
         document.getElementById('workflowHint').style.display = 'flex';
+        checkUnsavedChanges();
     }
 
     function toggleAll(source) {
@@ -1283,8 +1339,9 @@
     async function saveInvoiceFields() {
         const statusSelects = document.querySelectorAll('.status-select');
         const estDateInputs = document.querySelectorAll('.est-date-input');
+        const dateInputs = document.querySelectorAll('.date-input');
         
-        // Build a map: row_index -> { status?, est_payment_date? }
+        // Build a map: row_index -> { status?, est_payment_date?, invoice_date? }
         const rowMap = {};
 
         statusSelects.forEach(sel => {
@@ -1313,6 +1370,22 @@
             }
         });
 
+        dateInputs.forEach(input => {
+            const original = input.getAttribute('data-original');
+            const current = input.value;
+            const rowIdx = input.getAttribute('data-row');
+            if (current !== original) {
+                // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
+                let sheetDate = current;
+                if (current) {
+                    const parts = current.split('-');
+                    if (parts.length === 3) sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                if (!rowMap[rowIdx]) rowMap[rowIdx] = { row_index: parseInt(rowIdx) };
+                rowMap[rowIdx].invoice_date = sheetDate;
+            }
+        });
+
         const updates = Object.values(rowMap);
 
         if (updates.length === 0) {
@@ -1336,6 +1409,8 @@
                 // Mark saved values as the new originals
                 statusSelects.forEach(sel => sel.setAttribute('data-original', sel.value));
                 estDateInputs.forEach(input => input.setAttribute('data-original', input.value));
+                dateInputs.forEach(input => input.setAttribute('data-original', input.value));
+                checkUnsavedChanges();
                 showToast(`${updates.length} fila(s) actualizada(s) con éxito!`);
                 // Refresh sheets iframe
                 const sheetsIframe = document.querySelector('#sheetsView iframe');

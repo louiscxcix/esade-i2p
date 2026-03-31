@@ -215,6 +215,12 @@ export async function updateInvoiceFields(updates) {
         values: [[u.est_payment_date]],
       });
     }
+    if (u.invoice_date != null) {
+      data.push({
+        range: `${WORKSHEET_NAME}!K${u.row_index}`,
+        values: [[u.invoice_date]],
+      });
+    }
   }
 
   if (data.length > 0) {
