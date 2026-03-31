@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Biloop Integration Dashboard deployed on Netlify",
   "type": "module",
+  "scripts": {
+    "dev": "netlify dev"
+  },
   "dependencies": {
     "googleapis": "^140.0.0",
     "papaparse": "^5.4.1",

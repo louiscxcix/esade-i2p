@@ -1,21 +1,21 @@
-# Python Virtual Environments
+# Environment and Secrets
+.env
+.env.*
+keys.env
+credentials.json
+
+# Node modules and build
+node_modules/
+.netlify/
+npm-debug.log*
+
+# Python legacy (optional, still useful to ignore if recreated)
 .venv/
 venv/
-ENV/
-env/
 __pycache__/
 
-# Node
-node_modules/
-
-# Netlify
-.netlify/
-
-# Secrets and Credentials
-credentials.json
-.streamlit/
-.env
-keys.env
-
-# MacOS
+# OS
 .DS_Store
+
+# Data
+invoices/

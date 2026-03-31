@@ -836,9 +836,6 @@
                     <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
                         🔄 Actualizar
                     </button>
-                    <button class="btn-primary" onclick="saveDates()" id="saveDatesBtn" style="background-color: var(--date-highlight); box-shadow: 0 4px 6px -1px rgba(37,99,235,0.4);" title="Guarda cualquier cambio de fecha de factura de la tabla">
-                        💾 Guardar Fechas
-                    </button>
                     <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Guarda cualquier cambio de estado o fecha estimada de pago">
                         ✏️ Guardar Cambios
                     </button>
@@ -850,23 +847,16 @@
 
             <!-- Stats bar -->
             <div class="stats-bar" id="statsBar" style="display:none;">
-                <div class="stat-card">
-                    <span class="stat-card-label">📊 Total Facturas</span>
-                    <span class="stat-card-value" id="statTotal">—</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-card-label">💶 Importe Total</span>
-                    <span class="stat-card-value" id="statAmount">—</span>
-                </div>
-                <div class="stat-card paid">
+
+                <div class="stat-card paid" onclick="toggleFilter('paid')" style="cursor:pointer; transition:all 0.3s;">
                     <span class="stat-card-label">✅ Pagado</span>
                     <span class="stat-card-value" id="statPaid">—</span>
                 </div>
-                <div class="stat-card pending">
+                <div class="stat-card pending" onclick="toggleFilter('pending')" style="cursor:pointer; transition:all 0.3s;">
                     <span class="stat-card-label">⏳ Pendiente</span>
                     <span class="stat-card-value" id="statPending">—</span>
                 </div>
-                <div class="stat-card overdue">
+                <div class="stat-card overdue" onclick="toggleFilter('overdue')" style="cursor:pointer; transition:all 0.3s;">
                     <span class="stat-card-label">⚠️ Vencido</span>
                     <span class="stat-card-value" id="statOverdue">—</span>
                 </div>
@@ -877,7 +867,7 @@
                 <span style="font-size:1.2rem;">ℹ️</span>
                 <div class="steps">
                     <div class="hint-step"><div class="hint-step-num">1</div> Edita fechas o estados en la tabla</div>
-                    <div class="hint-step"><div class="hint-step-num">2</div> Haz clic en <strong style="color:var(--text-main);">Guardar Fechas</strong> o <strong style="color:var(--text-main);">Guardar Cambios</strong></div>
+                    <div class="hint-step"><div class="hint-step-num">2</div> Haz clic en <strong style="color:var(--text-main);">Guardar Cambios</strong></div>
                     <div class="hint-step"><div class="hint-step-num">3</div> Marca ☑ y haz clic en <strong style="color:var(--text-main);">Enviar a Biloop</strong> para subir</div>
                 </div>
             </div>
@@ -900,7 +890,6 @@
                             <th>Posición</th>
                             <th class="date-col-header">
                                 📅 Fecha Factura
-                                <span class="date-hint">Edita y haz clic en Guardar Fechas</span>
                             </th>
                             <th class="est-date-col-header">
                                 🗓 Fecha Est. Pago
@@ -1086,6 +1075,44 @@
     // ===== Shared Data =====
     let globalData = [];
     let marginData = [];
+    let currentFilter = 'all';
+
+    function toggleFilter(filter) {
+        if (currentFilter === filter) {
+            currentFilter = 'all';
+        } else {
+            currentFilter = filter;
+        }
+
+        const rows = document.querySelectorAll('.invoice-row');
+        rows.forEach(row => {
+            if (currentFilter === 'all') {
+                row.style.display = '';
+            } else {
+                row.style.display = row.classList.contains(currentFilter) ? '' : 'none';
+            }
+        });
+
+        const cards = document.querySelectorAll('#statsBar .stat-card');
+        cards.forEach(card => {
+            if (currentFilter === 'all') {
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1)';
+                card.style.borderColor = 'var(--border-color)';
+            } else {
+                if (card.classList.contains(currentFilter)) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'scale(1.05)';
+                    const color = window.getComputedStyle(card.querySelector('.stat-card-value')).color;
+                    card.style.borderColor = color;
+                } else {
+                    card.style.opacity = '0.5';
+                    card.style.transform = 'scale(0.95)';
+                    card.style.borderColor = 'var(--border-color)';
+                }
+            }
+        });
+    }
 
     // ===== Invoice Upload Logic =====
     async function fetchData() {
@@ -1176,6 +1203,8 @@
             }
 
             const tr = document.createElement('tr');
+            tr.className = `invoice-row ${statusClass}`;
+            tr.style.display = (currentFilter === 'all' || currentFilter === statusClass) ? '' : 'none';
             tr.innerHTML = `
                 <td>
                     <div class="checkbox-wrapper">
@@ -1188,10 +1217,7 @@
                 </td>
                 <td>${invoice['Candidato']}</td>
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>
-                <td>
-                    <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
-                           data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}">
-                </td>
+                <td style="font-family: monospace; color: var(--text-main);">${formattedDate}</td>
                 <td>
                     <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
                            data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}">
@@ -1238,8 +1264,7 @@
         const overdue = data.filter(inv => /overdue/i.test(inv['Status'])).length;
         const pending = total - paid - overdue;
 
-        document.getElementById('statTotal').textContent   = total;
-        document.getElementById('statAmount').textContent  = '€ ' + totalAmt.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
         document.getElementById('statPaid').textContent    = paid;
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statOverdue').textContent = overdue;
@@ -1326,64 +1351,6 @@
         }
     }
 
-    // Save all changed dates when user clicks Update Dates button
-    async function saveDates() {
-        const dateInputs = document.querySelectorAll('.date-input');
-        const updates = [];
-        
-        dateInputs.forEach(input => {
-            const originalVal = input.getAttribute('data-original');
-            const currentVal = input.value;
-            const rowIdx = input.getAttribute('data-row');
-            
-            if (currentVal && currentVal !== originalVal) {
-                // Convert YYYY-MM-DD to DD/MM/YYYY for the sheet
-                const parts = currentVal.split('-');
-                let sheetDate = currentVal;
-                if (parts.length === 3) {
-                    sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                }
-                updates.push({ row_index: parseInt(rowIdx), new_date: sheetDate });
-            }
-        });
-        
-        if (updates.length === 0) {
-            showToast('No hay cambios de fecha para guardar.', 'error');
-            return;
-        }
-        
-        const btn = document.getElementById('saveDatesBtn');
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Guardando...';
-        
-        try {
-            const response = await fetch('/api/update_dates', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates)
-            });
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                // Mark all saved dates as the new originals
-                dateInputs.forEach(input => {
-                    input.setAttribute('data-original', input.value);
-                });
-                showToast(`${updates.length} fecha(s) actualizada(s) con éxito!`);
-                
-                // Refresh iframes
-                const sheetsIframe = document.querySelector('#sheetsView iframe');
-                if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
-            } else {
-                showToast('Error al guardar fechas: ' + result.message, 'error');
-            }
-        } catch (error) {
-            showToast('Error al conectar con el servidor', 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '💾 Guardar Fechas';
-        }
-    }
 
     async function uploadInvoice(index, downloadPdf = false) {
         const invoiceData = globalData[index];
@@ -1425,10 +1392,12 @@
     }
 
     function uploadSingle(index) {
+        if (!confirm('¿Estás seguro de que quieres enviar esta factura a Biloop?')) return;
         uploadInvoice(index);
     }
 
     async function saveAndDownloadInvoice(index) {
+        if (!confirm('¿Estás seguro de que quieres guardar y descargar esta factura de Biloop?')) return;
         const btnSave = document.getElementById(`btn-save-${index}`);
         const originalText = btnSave.innerHTML;
         btnSave.disabled = true;
@@ -1471,6 +1440,8 @@
             alert('Por favor, selecciona al menos una factura para subir.');
             return;
         }
+        
+        if (!confirm(`¿Estás seguro de que quieres enviar ${checkboxes.length} factura(s) a Biloop?`)) return;
         
         uploadBtn.disabled = true;
         const originalText = uploadBtn.innerHTML;
