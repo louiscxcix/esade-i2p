@@ -831,6 +831,15 @@
             ✨ Asistente Inteligente
         </div>
     </div>
+    
+    <div style="flex-grow: 1;"></div>
+    
+    <div class="nav-menu" style="margin-bottom: 24px;">
+        <div class="nav-item" onclick="switchView('configView', this)">
+            ⚙️ Configuración
+        </div>
+    </div>
+    
     <div class="sidebar-footer">ESADE i2P &middot; v1.0</div>
 </div>
 
@@ -846,12 +855,6 @@
                     <p style="color: var(--text-muted); margin-top: 8px;">Revisa y gestiona tus facturas de colocación</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ Nueva Factura
-                    </button>
-                    <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
-                        🔄 Actualizar
-                    </button>
                     <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Guarda cualquier cambio de estado o fecha estimada de pago">
                         ✏️ Guardar Cambios
                     </button>
@@ -888,6 +891,19 @@
                 </div>
             </div>
             <div class="table-container">
+                <!-- Table Toolbar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.02);">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 1.05rem;">Listado de Facturas</div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-success" onclick="openNewInvoiceModal()">
+                            ➕ Nueva Factura
+                        </button>
+                        <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
+                            🔄 Actualizar
+                        </button>
+                    </div>
+                </div>
+                
                 <div id="loader" class="loader" style="flex-direction:column;">
                     <div class="spinner"></div>
                     <span class="loader-label">Cargando tus facturas...</span>
@@ -931,14 +947,6 @@
                     <h1>Márgenes de Reclutadores</h1>
                     <p style="color: var(--text-muted); margin-top: 8px;">Seguimiento y actualización de tarifas y comisiones</p>
                 </div>
-                <div class="header-actions">
-                    <button class="btn-success" onclick="openNewInvoiceModal()">
-                        ➕ Nueva Factura
-                    </button>
-                    <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
-                        🔄 Actualizar
-                    </button>
-                </div>
             </header>
 
             <div class="tip-banner">
@@ -947,6 +955,19 @@
             </div>
 
             <div class="table-container">
+                <!-- Table Toolbar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.02);">
+                    <div style="font-weight: 600; color: var(--text-main); font-size: 1.05rem;">Listado de Márgenes</div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-success" onclick="openNewInvoiceModal()">
+                            ➕ Nueva Factura
+                        </button>
+                        <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
+                            🔄 Actualizar
+                        </button>
+                    </div>
+                </div>
+                
                 <div id="marginLoader" class="loader">
                     <div class="spinner"></div>
                 </div>
@@ -1019,6 +1040,51 @@
                 <div style="display: flex; gap: 12px;">
                     <input type="text" id="chatInput" placeholder="Escribe una pregunta o haz clic en un ejemplo..." style="flex: 1; padding: 16px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none;" onkeypress="handleChatKeyPress(event)">
                     <button class="btn-primary" onclick="sendMessage()" id="sendBtn">✨ Preguntar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 6: Configuración -->
+    <div id="configView" class="view-container app-view">
+        <div class="container">
+            <header>
+                <div>
+                    <h1>⚙️ Configuración</h1>
+                    <p style="color: var(--text-muted); margin-top: 8px;">Gestiona tus integraciones de Google y el modelo de IA</p>
+                </div>
+            </header>
+
+            <div class="table-container" style="padding: 32px;">
+                <h3 style="margin-top: 0; margin-bottom: 24px; font-size: 1.25rem;">🌐 Integración Google</h3>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                    <p style="color: var(--text-muted); margin-top: 0; margin-bottom: 16px; line-height: 1.5;">
+                        Los paneles incrustados (Google Sheets y Looker Studio) utilizan la cuenta de Google actualmente activa en tu navegador, mientras que el backend usa una cuenta de servicio automática.
+                        <br><br>
+                        Si ves un mensaje de error o los paneles no cargan, probablemente necesitas cambiar tu cuenta de Google en el navegador.
+                    </p>
+                    <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn-primary" style="text-decoration: none; display: inline-flex;">
+                        👤 Cambiar Cuenta de Google (Login/Logout)
+                    </a>
+                </div>
+
+                <h3 style="margin-bottom: 24px; font-size: 1.25rem;">🧠 Configuración Gemini AI</h3>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px;">
+                    <p style="color: var(--text-muted); margin-top: 0; margin-bottom: 16px; line-height: 1.5;">
+                        Selecciona el modelo de Gemini que se utilizará para el <strong>Asistente Inteligente</strong>. Si un modelo falla, o es deprecado por Google, cambia a otro de la lista.
+                    </p>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Modelo de IA Activo</label>
+                    <select id="geminiModelSelect" style="width: 100%; max-width: 400px; padding: 12px 14px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.95rem; margin-bottom: 24px;" onchange="saveGeminiModel()">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recomendado, Más Rápido)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Razonamiento Avanzado)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Respaldo)</option>
+                        <option value="gemini-pro">Gemini Pro (Legado)</option>
+                    </select>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-success" onclick="saveGeminiModel()">
+                            💾 Guardar Preferencia
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1731,10 +1797,11 @@
         sendBtn.innerText = 'Pensando...';
         
         try {
+            const selectedModel = localStorage.getItem('biloop_gemini_model') || 'gemini-2.5-flash';
             const response = await fetch('/api/copilot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userText, history: chatHistoryArr })
+                body: JSON.stringify({ message: userText, history: chatHistoryArr, model: selectedModel })
             });
             const data = await response.json();
             
@@ -1800,11 +1867,29 @@
         }
     }
 
-    // ===== Init =====
-    document.addEventListener("DOMContentLoaded", () => {
+    // ===== Configuration =====
+    function loadConfig() {
+        const savedModel = localStorage.getItem('biloop_gemini_model') || 'gemini-2.5-flash';
+        const select = document.getElementById('geminiModelSelect');
+        if (select) {
+            select.value = savedModel;
+        }
+    }
+
+    function saveGeminiModel() {
+        const select = document.getElementById('geminiModelSelect');
+        if (select) {
+            localStorage.setItem('biloop_gemini_model', select.value);
+            showToast('Modelo de Gemini actualizado correctamente');
+        }
+    }
+
+    // Init fetch
+    window.onload = () => {
         fetchData();
         fetchMarginData();
-    });
+        loadConfig();
+    };
 </script>
 
 </body>

@@ -36,9 +36,11 @@ export default async (req) => {
 
     const systemPrompt = `You are an AI Co-pilot for an internal invoicing and margin dashboard. You answer questions about the following spreadsheet data:\n\n${context}\n\nHelp the user with data-driven insights. Be concise and format answers in nice markdown.`;
 
+    const selectedModelName = data.model || 'gemini-2.5-flash';
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: selectedModelName,
       systemInstruction: systemPrompt,
     });
 
