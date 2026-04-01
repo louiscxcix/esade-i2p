@@ -1,4 +1,4 @@
-import { updateRowMargins } from '../../lib/sheets.mjs';
+import { updateMarginsBatch } from '../../lib/sheets.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') {
@@ -6,15 +6,13 @@ export default async (req) => {
   }
 
   try {
-    const data = await req.json();
-    const rowIndex = data.row_index;
-    const marginUpdates = data.margin_updates || {};
+    const updates = await req.json();
 
-    if (!rowIndex) {
-      return Response.json({ success: false, message: 'No row index provided.' }, { status: 400 });
+    if (!updates || !Array.isArray(updates)) {
+      return Response.json({ success: false, message: 'Invalid updates data provided. Expected an array.' }, { status: 400 });
     }
 
-    const result = await updateRowMargins(rowIndex, marginUpdates);
+    const result = await updateMarginsBatch(updates);
     return Response.json(result);
   } catch (error) {
     console.error('Update margin error:', error);

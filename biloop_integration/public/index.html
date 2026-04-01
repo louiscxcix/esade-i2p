@@ -19,13 +19,17 @@
             --success: #10B981;
             --error: #EF4444;
             --sidebar-width: 250px;
-            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --date-highlight: #2563EB;
+            --glass-bg: rgba(18, 18, 18, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top left, rgba(245, 166, 35, 0.08), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.08), transparent 40%);
             color: var(--text-main);
             margin: 0;
             padding: 0;
@@ -213,12 +217,14 @@
         }
 
         .table-container {
-            background-color: var(--card-bg);
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-radius: 16px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--glass-border);
             overflow: hidden;
             overflow-x: auto;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         table {
@@ -249,11 +255,13 @@
         }
 
         tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: rgba(255, 255, 255, 0.01);
         }
 
         tr:hover {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.04);
+            transform: translateY(-1px);
+            box-shadow: inset 0 0 0 1px var(--glass-border);
         }
 
         tr:last-child td {
@@ -811,7 +819,9 @@
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-header">
-        <h2>Biloop Hub</h2>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <img src="/boomerang_logo.png" alt="Boomerang Logo" style="height: 38px; width: auto; object-fit: contain;">
+        </div>
         <p class="sidebar-tagline">Plataforma Financiera de Selección</p>
     </div>
     <div class="nav-menu">
@@ -855,8 +865,8 @@
                     <p style="color: var(--text-muted); margin-top: 8px;">Revisa y gestiona tus facturas de colocación</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn-primary" onclick="saveInvoiceFields()" id="saveFieldsBtn" style="background-color: #7C3AED; box-shadow: 0 4px 6px -1px rgba(124,58,237,0.4);" title="Guarda cualquier cambio de estado o fecha estimada de pago">
-                        ✏️ Guardar Cambios
+                    <button class="btn-outline" onclick="saveInvoiceFields()" id="saveFieldsBtn" title="Guarda cualquier cambio de estado, fecha estimada de pago o fecha de pago">
+                        💾 Guardar Cambios
                     </button>
                     <button class="btn-primary" onclick="uploadSelected()" id="uploadBtn" title="Solo envía las facturas marcadas (☑) a Biloop">
                         ☁️ Enviar a Biloop
@@ -895,7 +905,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.02);">
                     <div style="font-weight: 600; color: var(--text-main); font-size: 1.05rem;">Listado de Facturas</div>
                     <div style="display: flex; gap: 12px;">
-                        <button class="btn-success" onclick="openNewInvoiceModal()">
+                        <button class="btn-primary" onclick="openNewInvoiceModal()">
                             ➕ Nueva Factura
                         </button>
                         <button class="btn-secondary" onclick="fetchData()" id="refreshBtn">
@@ -925,6 +935,10 @@
                             </th>
                             <th class="est-date-col-header">
                                 🗓 Fecha Est. Pago
+                                <span class="date-hint">Edita y haz clic en Guardar Cambios</span>
+                            </th>
+                            <th class="date-col-header" style="background-color: #10B981 !important;">
+                                💳 Fecha Pago
                                 <span class="date-hint">Edita y haz clic en Guardar Cambios</span>
                             </th>
                             <th>Importe Factura</th>
@@ -959,7 +973,10 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.02);">
                     <div style="font-weight: 600; color: var(--text-main); font-size: 1.05rem;">Listado de Márgenes</div>
                     <div style="display: flex; gap: 12px;">
-                        <button class="btn-success" onclick="openNewInvoiceModal()">
+                        <button class="btn-outline" onclick="saveAllMargins()" id="saveAllMarginsBtn" title="Guarda todos los cambios realizados en las filas">
+                            💾 Guardar Cambios
+                        </button>
+                        <button class="btn-primary" onclick="openNewInvoiceModal()">
                             ➕ Nueva Factura
                         </button>
                         <button class="btn-secondary" onclick="fetchMarginData()" id="refreshMarginBtn">
@@ -975,23 +992,23 @@
                 <table id="marginTable" style="display: none;">
                     <thead>
                         <tr>
-                            <th>ID Factura</th>
+                            <th style="width: 50px;">
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" id="selectAllMargin" onchange="toggleAllMargin(this)">
+                                </div>
+                            </th>
+                            <th style="display:none;">ID Factura</th>
                             <th>Cliente</th>
                             <th>Candidato</th>
                             <th>Nombre Reclutador</th>
-                            <th class="margin-key-col-header">💰 Margen
-                                <span class="date-hint">Métrica clave</span>
-                            </th>
-                            <th class="margin-key-col-header">💰 Com. Reclutador
-                                <span class="date-hint">Métrica clave</span>
-                            </th>
+                            <th class="margin-key-col-header">💰 Margen</th>
+                            <th class="margin-key-col-header">💰 Com. Reclutador</th>
                             <th>Cobrado por BT</th>
                             <th>Ref. Factura</th>
-                            <th class="margin-key-col-header">💰 Importe Bruto
-                                <span class="date-hint">Métrica clave</span>
-                            </th>
+                            <th class="margin-key-col-header">💰 Importe Bruto</th>
                             <th>IVA</th>
-                            <th style="width: 80px;">Guardar</th>
+                            <th>Estado</th>
+                            <th class="date-col-header" style="background-color: #10B981 !important;">💳 Fecha Pago</th>
                         </tr>
                     </thead>
                     <tbody id="marginTableBody">
@@ -1112,7 +1129,7 @@
             <label>Fecha Inicio</label>
             <input type="date" id="newStartDate">
         </div>
-        <div class="modal-field">
+        <div class="modal-field" style="display: none;">
             <label>Salario Fijo (€)</label>
             <input type="number" id="newFixSalary" step="0.01" placeholder="ej. 50000">
         </div>
@@ -1120,7 +1137,7 @@
             <label>Fecha Factura</label>
             <input type="date" id="newInvoiceDate">
         </div>
-        <div class="modal-field">
+        <div class="modal-field" style="display: none;">
             <label>Tarifa %</label>
             <input type="text" id="newFeePercent" placeholder="ej. 20%">
         </div>
@@ -1249,6 +1266,17 @@
             const data = await response.json();
             
             if (response.ok) {
+                // Sort ascending by Fecha Factura
+                data.sort((a, b) => {
+                    const parseDate = (d) => {
+                        if (!d) return 0;
+                        const p = d.split('/');
+                        if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
+                        return new Date(d).getTime() || 0;
+                    };
+                    return parseDate(a['Fecha Factura']) - parseDate(b['Fecha Factura']);
+                });
+                
                 globalData = data;
                 renderTable(data);
                 table.style.display = 'table';
@@ -1303,6 +1331,16 @@
                 estPayFormatted = estPayRaw;
             }
 
+            // Actual Payment Date (col U)
+            const payRaw = invoice['Payment Date'] || '';
+            let payFormatted = '';
+            if (payRaw && payRaw.includes('/')) {
+                const pp = payRaw.split('/');
+                if (pp.length === 3) payFormatted = `${pp[2]}-${pp[1]}-${pp[0]}`;
+            } else {
+                payFormatted = payRaw;
+            }
+
             // Build the Invoice display ID like 20260301-01 based on date and index
             let displayInvoiceId = '';
             const dt = formattedDate; // YYYY-MM-DD
@@ -1342,6 +1380,10 @@
                 <td>
                     <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
                            data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
+                </td>
+                <td>
+                    <input type="date" class="date-input" id="paydate-${index}" value="${payFormatted}" style="background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.4) !important;"
+                           data-original="${payFormatted}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
                 </td>
                 <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
@@ -1448,7 +1490,12 @@
                     if (parts.length === 3) sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
                 if (!rowMap[rowIdx]) rowMap[rowIdx] = { row_index: parseInt(rowIdx) };
-                rowMap[rowIdx].invoice_date = sheetDate;
+                
+                if (input.id.startsWith('paydate-')) {
+                    rowMap[rowIdx].payment_date = sheetDate;
+                } else if (input.id.startsWith('date-')) {
+                    rowMap[rowIdx].invoice_date = sheetDate;
+                }
             }
         });
 
@@ -1642,10 +1689,15 @@
 
         data.forEach((record, index) => {
             const tr = document.createElement('tr');
+            tr.className = 'margin-invoice-row';
             
-            // Read-only context columns
             let html = `
-                <td style="font-weight: 600; color: var(--primary); white-space: nowrap;">${record._invoice_id}</td>
+                <td>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" class="margin-row-checkbox" value="${index}">
+                    </div>
+                </td>
+                <td style="font-weight: 600; color: var(--primary); white-space: nowrap; display: none;">${record._invoice_id}</td>
                 <td style="white-space: nowrap;">${record._client_name}</td>
                 <td style="white-space: nowrap;">${record._candidate_name}</td>
             `;
@@ -1656,54 +1708,159 @@
                 const isKey = MARGIN_KEY_HIGHLIGHT.has(key);
                 const cellStyle = isKey ? ' style="background: rgba(37,99,235,0.05);"' : '';
                 const inputClass = isKey ? 'margin-input margin-input-key' : 'margin-input';
-                html += `<td${cellStyle}><input class="${inputClass}" data-row="${index}" data-key="${key}" value="${val.replace(/"/g, '&quot;')}"></td>`;
+                html += `<td${cellStyle}><input class="${inputClass}" data-row="${index}" data-key="${key}" data-original="${val.replace(/"/g, '&quot;')}" value="${val.replace(/"/g, '&quot;')}" onchange="checkMarginUnsavedChanges()"></td>`;
             });
             
-            // Save button
-            html += `<td><button class="margin-save-btn" onclick="saveMarginRow(${index})" id="marginSaveBtn-${index}">💾</button></td>`;
+            const sheetStatus = record._status || '';
+            let statusClass = '';
+            if (/paid/i.test(sheetStatus)) statusClass = 'paid';
+            else if (/overdue/i.test(sheetStatus)) statusClass = 'overdue';
+            else statusClass = 'pending';
+
+            html += `
+                <td>
+                    <select class="status-select margin-status-select ${statusClass}" data-row="${index}" data-original="${sheetStatus}" onchange="updateStatusSelectStyle(this); checkMarginUnsavedChanges()">
+                        <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Pagada</option>
+                        <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Vencida</option>
+                        <option value="Cancelled" ${/cancelled/i.test(sheetStatus) ? 'selected' : ''}>Cancelada</option>
+                    </select>
+                </td>
+            `;
+
+            const payRaw = record._payment_date || '';
+            let payFormatted = '';
+            if (payRaw && payRaw.includes('/')) {
+                const pp = payRaw.split('/');
+                if (pp.length === 3) payFormatted = `${pp[2]}-${pp[1]}-${pp[0]}`;
+            } else {
+                payFormatted = payRaw;
+            }
+
+            html += `
+                <td>
+                    <input type="date" class="date-input margin-paydate-input" data-row="${index}" value="${payFormatted}" style="background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.4) !important;"
+                           data-original="${payFormatted}" onchange="checkMarginUnsavedChanges()">
+                </td>
+            `;
             
             tr.innerHTML = html;
             tbody.appendChild(tr);
         });
+        checkMarginUnsavedChanges();
     }
 
-    async function saveMarginRow(index) {
-        const record = marginData[index];
-        const btn = document.getElementById(`marginSaveBtn-${index}`);
-        btn.disabled = true;
-        btn.textContent = '...';
-        
-        // Collect all input values for this row
-        const marginUpdates = {};
-        const inputs = document.querySelectorAll(`input.margin-input[data-row="${index}"]`);
-        inputs.forEach(input => {
-            marginUpdates[input.dataset.key] = input.value;
+    function toggleAllMargin(source) {
+        const checkboxes = document.querySelectorAll('.margin-row-checkbox');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    function checkMarginUnsavedChanges() {
+        let hasUnsaved = false;
+        document.querySelectorAll('.margin-invoice-row').forEach(tr => {
+            let rowUnsaved = false;
+            const marginInputs = tr.querySelectorAll('.margin-input');
+            const statusSelect = tr.querySelector('.margin-status-select');
+            const paydateInput = tr.querySelector('.margin-paydate-input');
+            
+            marginInputs.forEach(i => { if(i.value !== i.getAttribute('data-original')) rowUnsaved = true; });
+            if (statusSelect && statusSelect.value !== statusSelect.getAttribute('data-original')) rowUnsaved = true;
+            if (paydateInput && paydateInput.value !== paydateInput.getAttribute('data-original')) rowUnsaved = true;
+            
+            if (rowUnsaved) {
+                tr.classList.add('unsaved');
+                hasUnsaved = true;
+            } else {
+                tr.classList.remove('unsaved');
+            }
         });
         
+        const saveBtn = document.getElementById('saveAllMarginsBtn');
+        if (saveBtn) {
+            if (hasUnsaved) saveBtn.classList.add('pulse-red');
+            else saveBtn.classList.remove('pulse-red');
+        }
+    }
+
+    async function saveAllMargins() {
+        const checkboxes = document.querySelectorAll('.margin-row-checkbox:checked');
+        const rowsToSave = new Set();
+        
+        // Include unsaved changes implicitly
+        document.querySelectorAll('.margin-invoice-row.unsaved .margin-row-checkbox').forEach(cb => rowsToSave.add(cb.value));
+        checkboxes.forEach(cb => rowsToSave.add(cb.value));
+
+        if (rowsToSave.size === 0) {
+            showToast('Selecciona filas con el checkbox o asegúrate de haber editado algún campo para guardar.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('saveAllMarginsBtn');
+        btn.disabled = true;
+        const oT = btn.innerHTML;
+        btn.innerHTML = '⏳ Guardando...';
+
+        const payload = [];
+
+        Array.from(rowsToSave).forEach(idx => {
+            const index = parseInt(idx);
+            const record = marginData[index];
+            
+            const marginUpdates = {};
+            const inputs = document.querySelectorAll(`input.margin-input[data-row="${index}"]`);
+            inputs.forEach(input => {
+                marginUpdates[input.dataset.key] = input.value;
+            });
+
+            const statusNode = document.querySelector(`.margin-status-select[data-row="${index}"]`);
+            const paydateNode = document.querySelector(`.margin-paydate-input[data-row="${index}"]`);
+
+            let sheetDate = paydateNode ? paydateNode.value : '';
+            if (sheetDate && sheetDate.includes('-')) {
+                const parts = sheetDate.split('-');
+                if (parts.length === 3) sheetDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            payload.push({
+                row_index: record._sheet_row_index,
+                margin_updates: marginUpdates,
+                status: statusNode ? statusNode.value : undefined,
+                payment_date: sheetDate
+            });
+        });
+
         try {
             const response = await fetch('/api/update_margin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    row_index: record._sheet_row_index,
-                    margin_updates: marginUpdates
-                })
+                body: JSON.stringify(payload)
             });
             const result = await response.json();
-            
+
             if (response.ok && result.success) {
-                showToast(`¡Fila ${record._invoice_id} actualizada!`);
-                btn.textContent = '✓';
-                setTimeout(() => { btn.textContent = '💾'; btn.disabled = false; }, 1500);
+                showToast(`¡${rowsToSave.size} fila(s) actualizada(s) con éxito!`);
+                // update originals
+                Array.from(rowsToSave).forEach(idx => {
+                    const index = parseInt(idx);
+                    document.querySelectorAll(`input.margin-input[data-row="${index}"]`).forEach(i => i.setAttribute('data-original', i.value));
+                    const s = document.querySelector(`.margin-status-select[data-row="${index}"]`);
+                    if(s) s.setAttribute('data-original', s.value);
+                    const p = document.querySelector(`.margin-paydate-input[data-row="${index}"]`);
+                    if(p) p.setAttribute('data-original', p.value);
+                });
+                document.querySelectorAll('.margin-row-checkbox:checked').forEach(cb => cb.checked = false);
+                checkMarginUnsavedChanges();
+                // Refresh iframe
+                const sheetsIframe = document.querySelector('#sheetsView iframe');
+                if (sheetsIframe) sheetsIframe.src = sheetsIframe.src;
             } else {
                 showToast('Error al actualizar: ' + result.message, 'error');
-                btn.textContent = '💾';
-                btn.disabled = false;
             }
         } catch (error) {
             showToast('Error de conexión con el servidor', 'error');
-            btn.textContent = '💾';
+        } finally {
             btn.disabled = false;
+            btn.innerHTML = oT;
         }
     }
 

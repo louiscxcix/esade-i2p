@@ -111,6 +111,7 @@ export async function fetchInvoiceData() {
     const dataLine = lines[index + 4]; // 3 preamble + 1 header + data start
     const rowCells = Papa.parse(dataLine, { header: false }).data[0] || [];
     const estPayDate = rowCells[19] ? String(rowCells[19]).trim() : ''; // col T = index 19
+    const payDate = rowCells[20] ? String(rowCells[20]).trim() : ''; // col U = index 20
 
     return {
       Cliente: (row['Client Name'] || '').trim(),
@@ -126,6 +127,7 @@ export async function fetchInvoiceData() {
       'Importe Cobro': cleanCurrency(row['Gross Invoice Amount'] || 0),
       Status: (row['Status'] || '').trim(),
       'Estimated Payment Date': estPayDate,
+      'Payment Date': payDate,
       _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
     };
   });
@@ -155,6 +157,8 @@ export async function fetchMarginData() {
       _invoice_id: (row['Invoice ID'] || '').trim(),
       _client_name: (row['Client Name'] || '').trim(),
       _candidate_name: (row['Candidate Name'] || '').trim(),
+      _status: (row['Status'] || '').trim(),
+      _payment_date: cells[20] ? String(cells[20]).trim() : '',
     };
 
     for (const col of MARGIN_COLUMNS) {
@@ -221,6 +225,12 @@ export async function updateInvoiceFields(updates) {
         values: [[u.invoice_date]],
       });
     }
+    if (u.payment_date != null) {
+      data.push({
+        range: `${WORKSHEET_NAME}!U${u.row_index}`,
+        values: [[u.payment_date]],
+      });
+    }
   }
 
   if (data.length > 0) {
@@ -236,8 +246,8 @@ export async function updateInvoiceFields(updates) {
   return { success: true, message: `Updated ${data.length} field(s).` };
 }
 
-/** Update margin columns (W-AH) for a specific row */
-export async function updateRowMargins(rowIndex, marginUpdates) {
+/** Update margin columns (W-AH), Status, and Payment Date across multiple rows */
+export async function updateMarginsBatch(updates) {
   const sheets = getSheetsClient();
 
   // Convert 1-indexed sheetCol to column letter (e.g., 23 -> W, 34 -> AH)
@@ -252,12 +262,25 @@ export async function updateRowMargins(rowIndex, marginUpdates) {
   }
 
   const data = [];
-  for (const col of MARGIN_COLUMNS) {
-    if (col.key in marginUpdates && marginUpdates[col.key] != null) {
-      data.push({
-        range: `${WORKSHEET_NAME}!${colToLetter(col.sheetCol)}${rowIndex}`,
-        values: [[String(marginUpdates[col.key])]],
-      });
+  for (const u of updates) {
+    const { row_index, margin_updates, status, payment_date } = u;
+
+    if (margin_updates) {
+      for (const col of MARGIN_COLUMNS) {
+        if (col.key in margin_updates && margin_updates[col.key] != null) {
+          data.push({
+            range: `${WORKSHEET_NAME}!${colToLetter(col.sheetCol)}${row_index}`,
+            values: [[String(margin_updates[col.key])]],
+          });
+        }
+      }
+    }
+
+    if (status != null) {
+      data.push({ range: `${WORKSHEET_NAME}!S${row_index}`, values: [[status]] });
+    }
+    if (payment_date != null) {
+      data.push({ range: `${WORKSHEET_NAME}!U${row_index}`, values: [[payment_date]] });
     }
   }
 
