@@ -3,24 +3,24 @@ import { google } from 'googleapis';
 
 // --- Configuration ---
 const SHEET_ID = '15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk';
-const GID = '0';
+const GID = '1209787837';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&id=${SHEET_ID}&gid=${GID}`;
-const WORKSHEET_NAME = 'Raw Data';
+const WORKSHEET_NAME = 'Datos en bruto';
 
-// Column mapping for W-AH (0-indexed from CSV: 22-33, 1-indexed for Sheets API: 23-34)
+// Column mapping for X-AJ (0-indexed from CSV: 23-35, 1-indexed for Sheets API: 24-36)
 const MARGIN_COLUMNS = [
-  { key: 'Recruiter Name', csvIdx: 22, sheetCol: 23 },
-  { key: 'Margin', csvIdx: 23, sheetCol: 24 },
-  { key: 'Recruiter Commission', csvIdx: 24, sheetCol: 25 },
-  { key: 'Collected by BT', csvIdx: 25, sheetCol: 26 },
-  { key: 'Invoice', csvIdx: 26, sheetCol: 27 },
-  { key: 'Recruiter Invoice ID', csvIdx: 27, sheetCol: 28 },
-  { key: 'Invoice Date (Recruiter)', csvIdx: 28, sheetCol: 29 },
-  { key: 'Due Date (Recruiter)', csvIdx: 29, sheetCol: 30 },
-  { key: 'VAT', csvIdx: 30, sheetCol: 31 },
-  { key: 'IRPF', csvIdx: 31, sheetCol: 32 },
-  { key: 'Gross Invoice Amount (Recruiter)', csvIdx: 32, sheetCol: 33 },
-  { key: 'Payment Status', csvIdx: 33, sheetCol: 34 },
+  { key: 'Recruiter Name', csvIdx: 23, sheetCol: 24 },
+  { key: 'Margin', csvIdx: 24, sheetCol: 25 },
+  { key: 'Recruiter Commission', csvIdx: 25, sheetCol: 26 },
+  { key: 'Collected by BT', csvIdx: 26, sheetCol: 27 },
+  { key: 'Invoice', csvIdx: 27, sheetCol: 28 },
+  { key: 'Recruiter Invoice ID', csvIdx: 28, sheetCol: 29 },
+  { key: 'Invoice Date (Recruiter)', csvIdx: 29, sheetCol: 30 },
+  { key: 'Due Date (Recruiter)', csvIdx: 30, sheetCol: 31 },
+  { key: 'VAT', csvIdx: 31, sheetCol: 32 },
+  { key: 'IRPF', csvIdx: 32, sheetCol: 33 },
+  { key: 'Gross Invoice Amount (Recruiter)', csvIdx: 33, sheetCol: 34 },
+  { key: 'Payment Status', csvIdx: 34, sheetCol: 35 },
 ];
 
 // --- Helpers ---
@@ -80,8 +80,8 @@ async function fetchCSV() {
       return newRow;
     });
   }
-  // Filter to rows with Invoice ID
-  return parsed.data.filter(row => row['Invoice ID'] && String(row['Invoice ID']).trim() !== '');
+  // Filter to rows with ID Factura
+  return parsed.data.filter(row => row['ID Factura'] && String(row['ID Factura']).trim() !== '');
 }
 
 // === PUBLIC API ===
@@ -104,28 +104,28 @@ export async function fetchInvoiceData() {
       return newRow;
     });
   }
-  const rows = parsed.data.filter(row => row['Invoice ID'] && String(row['Invoice ID']).trim() !== '');
+  const rows = parsed.data.filter(row => row['ID Factura'] && String(row['ID Factura']).trim() !== '');
 
   return rows.map((row, index) => {
-    // Access col T (Estimated Payment Date) by index from the raw line
+    // Access col U (Estimated Payment Date) by index from the raw line
     const dataLine = lines[index + 4]; // 3 preamble + 1 header + data start
     const rowCells = Papa.parse(dataLine, { header: false }).data[0] || [];
-    const estPayDate = rowCells[19] ? String(rowCells[19]).trim() : ''; // col T = index 19
-    const payDate = rowCells[20] ? String(rowCells[20]).trim() : ''; // col U = index 20
+    const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : ''; // col U = index 20
+    const payDate = rowCells[21] ? String(rowCells[21]).trim() : ''; // col V = index 21
 
     return {
-      Cliente: (row['Client Name'] || '').trim(),
-      Proceso: (row['Position'] || '').trim(),
-      Candidato: (row['Candidate Name'] || '').trim(),
-      'Fecha Factura': (row['Invoice Date'] || '').trim(),
+      Cliente: (row['Cliente'] || '').trim(),
+      Proceso: (row['Proceso'] || '').trim(),
+      Candidato: (row['Candidato'] || '').trim(),
+      'Fecha Factura': (row['Fecha Factura'] || '').trim(),
       Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
-      Salario: cleanCurrency(row['Fix Salary'] || 0),
-      'Importe factura': cleanCurrency(row['Invoice Amount'] || 0),
-      'Descuento (%)': cleanPercentage(row['Discount %'] || 0),
-      'Factura neta': cleanCurrency(row['Net Invoice Amount'] || 0),
-      IVA: cleanCurrency(row['IVA / VAT'] || 0),
-      'Importe Cobro': cleanCurrency(row['Gross Invoice Amount'] || 0),
-      Status: (row['Status'] || '').trim(),
+      Salario: cleanCurrency(row['Salario fijo'] || 0),
+      'Importe factura': cleanCurrency(row['Importe Factura'] || 0),
+      'Descuento (%)': cleanPercentage(row['Descuento %'] || 0),
+      'Factura neta': cleanCurrency(row['Factura Neta'] || 0),
+      IVA: cleanCurrency(row['IVA'] || 0),
+      'Importe Cobro': cleanCurrency(row['Factura Bruto'] || 0),
+      Status: (row['Estado'] || '').trim(),
       'Estimated Payment Date': estPayDate,
       'Payment Date': payDate,
       _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
@@ -154,11 +154,11 @@ export async function fetchMarginData() {
 
     const record = {
       _sheet_row_index: index + 5,
-      _invoice_id: (row['Invoice ID'] || '').trim(),
-      _client_name: (row['Client Name'] || '').trim(),
-      _candidate_name: (row['Candidate Name'] || '').trim(),
-      _status: (row['Status'] || '').trim(),
-      _payment_date: cells[20] ? String(cells[20]).trim() : '',
+      _invoice_id: (row['ID Factura'] || '').trim(),
+      _client_name: (row['Cliente'] || '').trim(),
+      _candidate_name: (row['Candidato'] || '').trim(),
+      _status: (row['Estado'] || '').trim(),
+      _payment_date: cells[21] ? String(cells[21]).trim() : '',
     };
 
     for (const col of MARGIN_COLUMNS) {
@@ -185,7 +185,7 @@ export async function updateInvoiceDates(updates) {
 
   // Use values.batchUpdate with USER_ENTERED so Sheets interprets dates properly
   const data = updates.map(u => ({
-    range: `${WORKSHEET_NAME}!K${u.row_index}`,
+    range: `${WORKSHEET_NAME}!L${u.row_index}`, // Fecha Factura is col L
     values: [[u.new_date]],
   }));
 
@@ -209,25 +209,25 @@ export async function updateInvoiceFields(updates) {
   for (const u of updates) {
     if (u.status != null) {
       data.push({
-        range: `${WORKSHEET_NAME}!S${u.row_index}`,
+        range: `${WORKSHEET_NAME}!T${u.row_index}`, // Estado is col T
         values: [[u.status]],
       });
     }
     if (u.est_payment_date != null) {
       data.push({
-        range: `${WORKSHEET_NAME}!T${u.row_index}`,
+        range: `${WORKSHEET_NAME}!U${u.row_index}`, // Feche Estimada de Pago is col U
         values: [[u.est_payment_date]],
       });
     }
     if (u.invoice_date != null) {
       data.push({
-        range: `${WORKSHEET_NAME}!K${u.row_index}`,
+        range: `${WORKSHEET_NAME}!L${u.row_index}`, // Fecha Factura is col L
         values: [[u.invoice_date]],
       });
     }
     if (u.payment_date != null) {
       data.push({
-        range: `${WORKSHEET_NAME}!U${u.row_index}`,
+        range: `${WORKSHEET_NAME}!V${u.row_index}`, // Feche de Cobro is col V
         values: [[u.payment_date]],
       });
     }
@@ -277,10 +277,10 @@ export async function updateMarginsBatch(updates) {
     }
 
     if (status != null) {
-      data.push({ range: `${WORKSHEET_NAME}!S${row_index}`, values: [[status]] });
+      data.push({ range: `${WORKSHEET_NAME}!T${row_index}`, values: [[status]] }); // Estado is col T
     }
     if (payment_date != null) {
-      data.push({ range: `${WORKSHEET_NAME}!U${row_index}`, values: [[payment_date]] });
+      data.push({ range: `${WORKSHEET_NAME}!V${row_index}`, values: [[payment_date]] }); // Feche de Cobro is col V
     }
   }
 
@@ -301,7 +301,7 @@ export async function updateMarginsBatch(updates) {
 export async function createNewInvoice(invoiceData) {
   const sheets = getSheetsClient();
 
-  // Get existing Invoice IDs from column C
+  // Get existing ID Factura from column C (index 2)
   const idResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${WORKSHEET_NAME}!C:C`,
@@ -318,22 +318,22 @@ export async function createNewInvoice(invoiceData) {
   }
   const nextId = `INV-${String(maxNum + 1).padStart(4, '0')}`;
 
-  // Build a 35-column row (A through AI)
-  const newRow = new Array(35).fill('');
-  newRow[2] = nextId;                                 // C: Invoice ID
-  newRow[3] = invoiceData.client_name || '';           // D: Client Name
-  newRow[4] = invoiceData.position || '';              // E: Position
-  newRow[5] = invoiceData.candidate_name || '';        // F: Candidate Name
-  newRow[6] = invoiceData.start_date || '';            // G: Start Date
-  newRow[7] = invoiceData.fix_salary || '';            // H: Fix Salary
-  newRow[10] = invoiceData.invoice_date || '';         // K: Invoice Date
-  newRow[11] = invoiceData.fee_percent || '';          // L: Fee %
-  newRow[12] = invoiceData.invoice_amount || '';       // M: Invoice Amount
-  newRow[18] = invoiceData.status || 'Pending';       // S: Status
+  // Build a 36-column row (A through AJ)
+  const newRow = new Array(36).fill('');
+  newRow[2] = nextId;                                 // C: ID Factura
+  newRow[3] = invoiceData.client_name || '';           // D: Cliente
+  newRow[4] = invoiceData.position || '';              // E: Proceso
+  newRow[6] = invoiceData.candidate_name || '';        // G: Candidato
+  newRow[7] = invoiceData.start_date || '';            // H: Fecha de Inicio
+  newRow[8] = invoiceData.fix_salary || '';            // I: Salario fijo
+  newRow[11] = invoiceData.invoice_date || '';         // L: Fecha Factura
+  newRow[12] = invoiceData.fee_percent || '';          // M: Fee % 
+  newRow[13] = invoiceData.invoice_amount || '';       // N: Importe Factura
+  newRow[19] = invoiceData.status || 'Pending';       // T: Estado
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${WORKSHEET_NAME}!A:AI`,
+    range: `${WORKSHEET_NAME}!A:AJ`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [newRow] },
   });
