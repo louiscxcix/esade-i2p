@@ -451,12 +451,15 @@
         tr:hover { background: var(--bg-hover); }
         tr:last-child td { border-bottom: none; }
 
+
         .currency {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 550;
             color: var(--text-primary);
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            min-width: 100px;
         }
 
         /* ── Status system ─────────────────────────── */
@@ -757,7 +760,7 @@
             font-family: inherit;
             font-size: 12px;
             width: 100%;
-            min-width: 72px;
+            min-width: 100px;
             box-sizing: border-box;
             transition: all var(--speed) var(--ease);
         }
@@ -1268,6 +1271,10 @@
                     <div class="page-desc">Revisa y gestiona tus facturas de colocación</div>
                 </div>
                 <div class="header-actions">
+                    <button class="btn-success" onclick="openNewInvoiceModal()">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Nueva Factura
+                    </button>
                     <button class="btn-secondary btn-inactive" onclick="saveInvoiceFields()" id="saveFieldsBtn" title="Guarda cambios de estado o fecha" data-tooltip="No hay cambios sin guardar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                         Guardar Cambios
@@ -1275,6 +1282,10 @@
                     <button class="btn-primary btn-inactive" onclick="uploadSelected()" id="uploadBtn" title="Envía facturas marcadas a Biloop" data-tooltip="Selecciona facturas primero">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                         Enviar a Biloop
+                    </button>
+                    <button class="btn-ghost" onclick="fetchData()" id="refreshBtn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Refresh
                     </button>
                 </div>
             </header>
@@ -1308,19 +1319,7 @@
                 <span>Tienes cambios sin guardar — haz clic en <strong style="color:var(--text-primary);">Guardar Cambios</strong> para aplicarlos</span>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <div class="table-toolbar-title">Listado de Facturas</div>
-                <div class="table-toolbar-actions">
-                    <button class="btn-success" onclick="openNewInvoiceModal()">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Nueva Factura
-                    </button>
-                    <button class="btn-ghost" onclick="fetchData()" id="refreshBtn">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                        Refresh
-                    </button>
-                </div>
-            </div>
+            <div style="margin-bottom:12px;"></div>
 
             <div class="table-container">
                 <div id="loader" class="loader">
@@ -1367,6 +1366,20 @@
                     <div class="page-title">Márgenes de Reclutadores</div>
                     <div class="page-desc">Seguimiento y actualización de tarifas y comisiones</div>
                 </div>
+                <div class="header-actions">
+                    <button class="btn-success" onclick="openNewInvoiceModal()">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Nueva Factura
+                    </button>
+                    <button class="btn-secondary" onclick="saveAllMargins()" id="saveAllMarginsBtn" title="Guarda todos los cambios">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar Cambios
+                    </button>
+                    <button class="btn-ghost" onclick="fetchMarginData()" id="refreshMarginBtn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Refresh
+                    </button>
+                </div>
             </header>
 
             <div class="tip-banner">
@@ -1375,23 +1388,7 @@
             </div>
 
             <div class="table-container">
-                <div class="table-toolbar">
-                    <div class="table-toolbar-title">Listado de Márgenes</div>
-                    <div class="table-toolbar-actions">
-                        <button class="btn-outline" onclick="saveAllMargins()" id="saveAllMarginsBtn" title="Guarda todos los cambios">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            Guardar Cambios
-                        </button>
-                        <button class="btn-success" onclick="openNewInvoiceModal()">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Nueva Factura
-                        </button>
-                        <button class="btn-ghost" onclick="fetchMarginData()" id="refreshMarginBtn">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
+                <div style="margin-bottom:12px;"></div>
 
                 <div id="marginLoader" class="loader"><div class="spinner"></div></div>
 
