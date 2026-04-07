@@ -114,7 +114,7 @@ export async function fetchInvoiceData() {
 
             validRows.push({
                 // Original keys (for UI)
-                Cliente: (rowCells[clientIdx] || '').trim(),
+                Cliente: (rowCells[clientIdx] || '').replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim(),
                 Proceso: (rowCells[procIdx] || '').trim(),
                 Candidato: (rowCells[candIdx] || '').trim(),
                 'Fecha Factura': invoiceDate,
@@ -185,7 +185,7 @@ export async function fetchMarginData() {
             const record = {
                 _sheet_row_index: i + 5,
                 _invoice_id: String(idVal).trim(),
-                _client_name: (cells[clientIdx] || '').trim(),
+                _client_name: (cells[clientIdx] || '').replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim(),
                 _candidate_name: (cells[candIdx] || '').trim(),
                 _status: (cells[statusIdx] || '').trim(),
                 _payment_date: (cells[payIdx] || '').trim(),

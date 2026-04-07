@@ -45,8 +45,11 @@ function formatBiloopDate(d) {
 /** Fetch client NIF dynamically from Biloop */
 async function getClientNif(clientName, token) {
   if (!clientName) return null;
-  const nameQuery = clientName.toLowerCase().trim();
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  const nameQuery = normalize(clientName);
   
+  if (!nameQuery) return null;
+
   try {
     const res = await fetch(`${BILOOP_BASE_URL}/billing/getERPCustomers?Company_id=E67652`, {
       method: 'GET',
@@ -56,10 +59,10 @@ async function getClientNif(clientName, token) {
     const data = await res.json();
     if (!data.data) return null;
     
-    // Strict name matching as requested
+    // Strict match after punctuation normalization (MC Recruiting. === MC Recruiting)
     const matchingClient = data.data.find(c => {
-      const dbName = (c.name || '').toLowerCase().trim();
-      const dbTrade = (c.trade_name || '').toLowerCase().trim();
+      const dbName = normalize(c.name);
+      const dbTrade = normalize(c.trade_name);
       return dbName === nameQuery || dbTrade === nameQuery;
     });
     
@@ -74,8 +77,11 @@ async function getClientNif(clientName, token) {
 export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   const token = await getAuthToken();
 
-  const clientName = invoiceJson.Cliente || invoiceJson['Client Name'] || 'Unknown Client';
-  const resolvedNif = await getClientNif(clientName, token) || "B99999999";
+  let clientName = invoiceJson.Cliente || invoiceJson['Client Name'] || 'Unknown Client';
+  // Strip prefixes like "20260408-171 " or "171 "
+  clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
+
+  const resolvedNif = await getClientNif(clientName, token) || "000000000";
 
   // Core Financials and Identifiers
   const a3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
