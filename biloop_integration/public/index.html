@@ -1677,18 +1677,7 @@
             const response = await fetch('/api/invoices');
             const data = await response.json();
             
-            if (response.ok) {
-                // Sort ascending by Fecha Factura
-                data.sort((a, b) => {
-                    const parseDate = (d) => {
-                        if (!d) return 0;
-                        const p = d.split('/');
-                        if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
-                        return new Date(d).getTime() || 0;
-                    };
-                    return parseDate(a['Fecha Factura']) - parseDate(b['Fecha Factura']);
-                });
-                
+             if (response.ok) {
                 globalData = data;
                 renderTable(data);
                 table.style.display = 'table';
