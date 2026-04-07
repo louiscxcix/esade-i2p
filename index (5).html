@@ -1345,11 +1345,17 @@
                     <div class="page-title">Márgenes de Reclutadores</div>
                     <div class="page-desc">Seguimiento y actualización de tarifas y comisiones</div>
                 </div>
+                <div class="header-actions">
+                    <button class="btn-secondary btn-inactive" onclick="saveAllMargins()" id="saveAllMarginsBtn" data-tooltip="No hay cambios sin guardar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar Cambios
+                    </button>
+                </div>
             </header>
 
             <div class="tip-banner">
                 <span class="tip-icon"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
-                <span>Haz clic en cualquier campo para editarlo y pulsa <strong style="color:var(--text-primary);">Guardar</strong> para actualizar.</span>
+                <span>Haz clic en cualquier campo para editarlo y pulsa <strong style="color:var(--text-primary);">Guardar Cambios</strong> para actualizar.</span>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -1372,7 +1378,11 @@
                 <table id="marginTable" style="display: none;">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th style="width: 40px;">
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" id="selectAllMargin" onchange="toggleAllMargin(this)">
+                                </div>
+                            </th>
                             <th>Cliente</th>
                             <th>Candidato</th>
                             <th>Reclutador</th>
@@ -1382,7 +1392,9 @@
                             <th>Ref.</th>
                             <th>Importe Bruto <span class="date-hint">Editable</span></th>
                             <th>IVA</th>
-                            <th style="width: 60px;"></th>
+                            <th>Estado</th>
+                            <th>Fecha Pago <span class="col-hint">Editable</span></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="marginTableBody"></tbody>
@@ -1393,7 +1405,7 @@
 
     <!-- ─── View 3: Google Sheets ─────────── -->
     <div id="sheetsView" class="view-container">
-        <iframe class="iframe-container" src="https://docs.google.com/spreadsheets/d/15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk/edit?gid=0&usp=sharing&widget=true&headers=false"></iframe>
+        <iframe class="iframe-container" src="https://docs.google.com/spreadsheets/d/15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk/edit?gid=1209787837&usp=sharing&widget=true&headers=false"></iframe>
     </div>
 
     <!-- ─── View 4: Looker Studio ─────────── -->
@@ -1797,30 +1809,151 @@
         tbody.innerHTML = '';
         data.forEach((rec, i) => {
             const tr = document.createElement('tr');
+            tr.className = 'margin-invoice-row';
+
+            // Parse payment date
+            const payRaw = rec._payment_date || '';
+            let payFmt = '';
+            if (payRaw && payRaw.includes('/')) {
+                const pp = payRaw.split('/');
+                if (pp.length === 3) payFmt = `${pp[2]}-${pp[1]}-${pp[0]}`;
+            } else { payFmt = payRaw; }
+
+            // Parse status
+            const st = rec._status || '';
+            let sc = /paid/i.test(st) ? 'paid' : /overdue/i.test(st) ? 'overdue' : 'pending';
+
             let html = `
-                <td style="font-weight:500;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;">${rec._invoice_id}</td>
-                <td>${rec._client_name}</td><td>${rec._candidate_name}</td>`;
+                <td><div class="checkbox-wrapper"><input type="checkbox" class="margin-row-checkbox" value="${i}"></div></td>
+                <td>${rec._client_name}</td>
+                <td>${rec._candidate_name}</td>`;
+
             MARGIN_KEYS.forEach(k => {
                 const v = rec[k] || '';
                 const cls = MARGIN_KEY_HIGHLIGHT.has(k) ? 'margin-input margin-input-key' : 'margin-input';
-                html += `<td><input class="${cls}" data-row="${i}" data-key="${k}" value="${v.replace(/"/g,'&quot;')}"></td>`;
+                html += `<td><input class="${cls}" data-row="${i}" data-key="${k}" data-original="${v.replace(/"/g,'&quot;')}" value="${v.replace(/"/g,'&quot;')}" onchange="checkMarginUnsavedChanges()"></td>`;
             });
-            html += `<td><button class="margin-save-btn" onclick="saveMarginRow(${i})" id="marginSaveBtn-${i}">Guardar</button></td>`;
-            tr.innerHTML = html; tbody.appendChild(tr);
+
+            html += `
+                <td>
+                    <select class="status-select margin-status-select ${sc}" data-row="${i}" data-original="${st}" onchange="updateStatusSelectStyle(this); checkMarginUnsavedChanges()">
+                        <option value="Pending" ${sc === 'pending' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Paid" ${sc === 'paid' ? 'selected' : ''}>Pagada</option>
+                        <option value="Overdue" ${sc === 'overdue' ? 'selected' : ''}>Vencida</option>
+                        <option value="Cancelled" ${/cancelled/i.test(st) ? 'selected' : ''}>Cancelada</option>
+                    </select>
+                </td>
+                <td><input type="date" class="date-input margin-paydate-input" data-row="${i}" value="${payFmt}" data-original="${payFmt}" onchange="checkMarginUnsavedChanges()"></td>
+                <td>
+                    <button class="btn-row" onclick="saveMarginRow(${i})" id="marginSaveBtn-${i}" title="Guardar esta fila">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar
+                    </button>
+                </td>`;
+
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
         });
+        checkMarginUnsavedChanges();
+    }
+
+    function toggleAllMargin(source) {
+        document.querySelectorAll('.margin-row-checkbox').forEach(cb => cb.checked = source.checked);
+    }
+
+    function checkMarginUnsavedChanges() {
+        let hasUnsaved = false;
+        document.querySelectorAll('.margin-invoice-row').forEach(tr => {
+            let rowUnsaved = false;
+            tr.querySelectorAll('.margin-input').forEach(i => { if (i.value !== i.getAttribute('data-original')) rowUnsaved = true; });
+            const ss = tr.querySelector('.margin-status-select');
+            if (ss && ss.value !== ss.getAttribute('data-original')) rowUnsaved = true;
+            const pd = tr.querySelector('.margin-paydate-input');
+            if (pd && pd.value !== pd.getAttribute('data-original')) rowUnsaved = true;
+            tr.classList.toggle('unsaved', rowUnsaved);
+            if (rowUnsaved) hasUnsaved = true;
+        });
+        const saveBtn = document.getElementById('saveAllMarginsBtn');
+        if (saveBtn) {
+            if (hasUnsaved) {
+                saveBtn.classList.remove('btn-inactive');
+                saveBtn.classList.add('pulse-red');
+                saveBtn.removeAttribute('data-tooltip');
+            } else {
+                saveBtn.classList.add('btn-inactive');
+                saveBtn.classList.remove('pulse-red');
+                saveBtn.setAttribute('data-tooltip', 'No hay cambios sin guardar');
+            }
+        }
+    }
+
+    async function saveAllMargins() {
+        if (document.getElementById('saveAllMarginsBtn').classList.contains('btn-inactive')) return;
+        const rowsToSave = new Set();
+        document.querySelectorAll('.margin-invoice-row.unsaved .margin-row-checkbox').forEach(cb => rowsToSave.add(cb.value));
+        document.querySelectorAll('.margin-row-checkbox:checked').forEach(cb => rowsToSave.add(cb.value));
+        if (rowsToSave.size === 0) { showToast('No hay cambios para guardar.', 'error'); return; }
+
+        const btn = document.getElementById('saveAllMarginsBtn');
+        btn.disabled = true; const origHTML = btn.innerHTML; btn.textContent = 'Guardando…';
+
+        const payload = [];
+        Array.from(rowsToSave).forEach(idx => {
+            const index = parseInt(idx);
+            const rec = marginData[index];
+            const marginUpdates = {};
+            document.querySelectorAll(`input.margin-input[data-row="${index}"]`).forEach(inp => { marginUpdates[inp.dataset.key] = inp.value; });
+            const statusNode = document.querySelector(`.margin-status-select[data-row="${index}"]`);
+            const paydateNode = document.querySelector(`.margin-paydate-input[data-row="${index}"]`);
+            let sheetDate = paydateNode ? paydateNode.value : '';
+            if (sheetDate && sheetDate.includes('-')) { const p = sheetDate.split('-'); if (p.length === 3) sheetDate = `${p[2]}/${p[1]}/${p[0]}`; }
+            payload.push({ row_index: rec._sheet_row_index, margin_updates: marginUpdates, status: statusNode ? statusNode.value : undefined, payment_date: sheetDate });
+        });
+
+        try {
+            const res = await fetch('/api/update_margin', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            const r = await res.json();
+            if (res.ok && r.success) {
+                showToast(`${rowsToSave.size} fila(s) actualizada(s)`);
+                Array.from(rowsToSave).forEach(idx => {
+                    const index = parseInt(idx);
+                    document.querySelectorAll(`input.margin-input[data-row="${index}"]`).forEach(i => i.setAttribute('data-original', i.value));
+                    const s = document.querySelector(`.margin-status-select[data-row="${index}"]`);
+                    if (s) s.setAttribute('data-original', s.value);
+                    const p = document.querySelector(`.margin-paydate-input[data-row="${index}"]`);
+                    if (p) p.setAttribute('data-original', p.value);
+                });
+                document.querySelectorAll('.margin-row-checkbox:checked').forEach(cb => cb.checked = false);
+                checkMarginUnsavedChanges();
+                const sf = document.querySelector('#sheetsView iframe'); if (sf) sf.src = sf.src;
+            } else { showToast('Error: ' + r.message, 'error'); }
+        } catch (e) { showToast('Error de conexión', 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = origHTML; }
     }
 
     async function saveMarginRow(i) {
-        const rec = marginData[i], btn = document.getElementById(`marginSaveBtn-${i}`);
-        btn.disabled = true; btn.textContent = '…';
-        const updates = {};
-        document.querySelectorAll(`input.margin-input[data-row="${i}"]`).forEach(inp => { updates[inp.dataset.key] = inp.value; });
+        const rec = marginData[i];
+        const btn = document.getElementById(`marginSaveBtn-${i}`);
+        btn.disabled = true; const orig = btn.innerHTML; btn.textContent = '…';
+        const marginUpdates = {};
+        document.querySelectorAll(`input.margin-input[data-row="${i}"]`).forEach(inp => { marginUpdates[inp.dataset.key] = inp.value; });
+        const statusNode = document.querySelector(`.margin-status-select[data-row="${i}"]`);
+        const paydateNode = document.querySelector(`.margin-paydate-input[data-row="${i}"]`);
+        let sheetDate = paydateNode ? paydateNode.value : '';
+        if (sheetDate && sheetDate.includes('-')) { const p = sheetDate.split('-'); if (p.length === 3) sheetDate = `${p[2]}/${p[1]}/${p[0]}`; }
         try {
-            const res = await fetch('/api/update_margin', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ row_index: rec._sheet_row_index, margin_updates: updates })});
+            const res = await fetch('/api/update_margin', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify([{ row_index: rec._sheet_row_index, margin_updates: marginUpdates, status: statusNode ? statusNode.value : undefined, payment_date: sheetDate }]) });
             const r = await res.json();
-            if (res.ok && r.success) { showToast(`${rec._invoice_id} actualizado`); btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'Guardar'; btn.disabled = false; }, 1500); }
-            else { showToast('Error: ' + r.message, 'error'); btn.textContent = 'Guardar'; btn.disabled = false; }
-        } catch (e) { showToast('Error de conexión', 'error'); btn.textContent = 'Guardar'; btn.disabled = false; }
+            if (res.ok && r.success) {
+                showToast(`Fila actualizada`);
+                document.querySelectorAll(`input.margin-input[data-row="${i}"]`).forEach(inp => inp.setAttribute('data-original', inp.value));
+                if (statusNode) statusNode.setAttribute('data-original', statusNode.value);
+                if (paydateNode) paydateNode.setAttribute('data-original', paydateNode.value);
+                checkMarginUnsavedChanges();
+                btn.innerHTML = '✓'; setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1500);
+                const sf = document.querySelector('#sheetsView iframe'); if (sf) sf.src = sf.src;
+            } else { showToast('Error: ' + r.message, 'error'); btn.innerHTML = orig; btn.disabled = false; }
+        } catch (e) { showToast('Error de conexión', 'error'); btn.innerHTML = orig; btn.disabled = false; }
     }
 
     // ===== Modal =====
@@ -1895,7 +2028,10 @@
     function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
     // ===== Init =====
-    document.addEventListener("DOMContentLoaded", () => { fetchData(); fetchMarginData(); });
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchData();
+        fetchMarginData();
+    });
 </script>
 </body>
 </html>
