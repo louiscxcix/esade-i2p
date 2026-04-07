@@ -1208,7 +1208,7 @@
 
     <div class="nav-section-label">Espacio de Trabajo</div>
     <div class="nav-menu">
-        <div class="nav-item active" onclick="switchView('appView', this)">
+        <div class="nav-item" onclick="switchView('appView', this)">
             <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
             Mis Facturas
         </div>
@@ -1220,9 +1220,9 @@
             <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></span>
             Datos en Bruto
         </div>
-        <div class="nav-item" onclick="switchView('lookerView', this)">
+        <div class="nav-item active" onclick="switchView('lookerView', this)">
             <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
-            Panel de Control
+            Financial Dashboard
         </div>
     </div>
 
@@ -1252,7 +1252,7 @@
 <div class="main-content">
 
     <!-- ─── View 1: Invoices ──────────────── -->
-    <div id="appView" class="view-container app-view active">
+    <div id="appView" class="view-container app-view">
         <div class="container">
             <header>
                 <div>
@@ -1415,8 +1415,8 @@
     </div>
 
     <!-- ─── View 4: Looker Studio ─────────── -->
-    <div id="lookerView" class="view-container">
-        <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_s33znkum1d" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <div id="lookerView" class="view-container active">
+        <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd/page/p_ph9e58tm1d" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
     </div>
 
     <!-- ─── View 5: AI Assistant ──────────── -->
@@ -1580,7 +1580,11 @@
             let rowUnsaved = false;
             ['date-input', 'est-date-input', 'pay-date-input', 'status-select'].forEach(cls => {
                 const el = tr.querySelector('.' + cls);
-                if (el && el.value !== el.getAttribute('data-original')) rowUnsaved = true;
+                if (el) {
+                   const cur = el.value.trim();
+                   const orig = el.getAttribute('data-original') || "";
+                   if (cur !== orig.trim()) rowUnsaved = true;
+                }
             });
             tr.classList.toggle('unsaved', rowUnsaved);
             if (rowUnsaved) hasUnsaved = true;
@@ -1670,7 +1674,7 @@
             val = String(val).trim();
             // Match 3 numeric parts separated by common delimiters
             const parts = val.match(/(\d{1,4})/g);
-            if (!parts || parts.length < 3) return val;
+            if (!parts || parts.length < 3) return "";
 
             let day, month, year;
 
@@ -1689,7 +1693,7 @@
             if (year && month && day && year.length === 4) {
                 return `${year}-${month}-${day}`;
             }
-            return val;
+            return ""; // Return empty string for invalid dates to match input behavior
         };
 
         data.forEach((invoice, index) => {
@@ -1700,15 +1704,20 @@
             const sheetStatus = (invoice['Status'] || '').trim();
             const statusLower = sheetStatus.toLowerCase();
             let statusClass = '';
+            let statusValue = '';
 
             if (statusLower.includes('cobrado') || statusLower.includes('paid') || statusLower.includes('pagada')) {
                 statusClass = 'cobrado';
+                statusValue = 'Cobrado';
             } else if (statusLower.includes('inminente')) {
                 statusClass = 'inminente';
+                statusValue = 'Inminente';
             } else if (statusLower.includes('vencido') || statusLower.includes('vencida') || statusLower.includes('overdue')) {
                 statusClass = 'vencido';
+                statusValue = 'Vencido';
             } else {
                 statusClass = 'pendiente';
+                statusValue = 'Pendiente';
             }
 
             // Build the Invoice display ID like 20260301-01 based on date and index
@@ -1754,7 +1763,7 @@
                 <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
                     <select class="status-select ${statusClass}" id="status-${index}"
-                            data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
+                            data-original="${statusValue}" data-row="${invoice['_sheet_row_index']}"
                             onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
                         <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                         <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
@@ -2093,20 +2102,25 @@
             const sheetStatus = (record._status || '').trim();
             const statusLower = sheetStatus.toLowerCase();
             let statusClass = '';
+            let statusValue = '';
 
             if (statusLower.includes('cobrado') || statusLower.includes('paid') || statusLower.includes('pagada')) {
                 statusClass = 'cobrado';
+                statusValue = 'Cobrado';
             } else if (statusLower.includes('inminente')) {
                 statusClass = 'inminente';
+                statusValue = 'Inminente';
             } else if (statusLower.includes('vencido') || statusLower.includes('vencida') || statusLower.includes('overdue')) {
                 statusClass = 'vencido';
+                statusValue = 'Vencido';
             } else {
                 statusClass = 'pendiente';
+                statusValue = 'Pendiente';
             }
 
             html += `
                 <td>
-                    <select class="status-select margin-status-select ${statusClass}" data-row="${index}" data-original="${sheetStatus}" onchange="updateStatusSelectStyle(this); checkMarginUnsavedChanges()">
+                    <select class="status-select margin-status-select ${statusClass}" data-row="${index}" data-original="${statusValue}" onchange="updateStatusSelectStyle(this); checkMarginUnsavedChanges()">
                         <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                         <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
                         <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
