@@ -81,7 +81,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  const resolvedNif = await getClientNif(clientName, token);
+  const resolvedNif = await getClientNif(clientName, token) || `G-${clientName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)}`;
 
   // Core Financials and Identifiers
   const a3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
@@ -151,10 +151,8 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     ]
   };
 
-  if (resolvedNif) {
-    payload.master_nif = resolvedNif;
-  }
-
+  payload.master_nif = resolvedNif;
+  
   console.log("Biloop Payload to be sent:", JSON.stringify(payload, null, 2));
 
   const headers = {
