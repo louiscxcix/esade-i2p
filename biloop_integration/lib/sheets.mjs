@@ -8,19 +8,20 @@ const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?forma
 const WORKSHEET_NAME = 'Datos en bruto';
 
 // Column mapping for X-AJ (0-indexed from CSV: 23-35, 1-indexed for Sheets API: 24-36)
-const MARGIN_COLUMNS = [
-  { key: 'Recruiter Name', csvIdx: 23, sheetCol: 24 },
-  { key: 'Margin', csvIdx: 24, sheetCol: 25 },
-  { key: 'Recruiter Commission', csvIdx: 25, sheetCol: 26 },
-  { key: 'Collected by BT', csvIdx: 26, sheetCol: 27 },
-  { key: 'Invoice', csvIdx: 27, sheetCol: 28 },
-  { key: 'Recruiter Invoice ID', csvIdx: 28, sheetCol: 29 },
-  { key: 'Invoice Date (Recruiter)', csvIdx: 29, sheetCol: 30 },
-  { key: 'Due Date (Recruiter)', csvIdx: 30, sheetCol: 31 },
-  { key: 'VAT', csvIdx: 31, sheetCol: 32 },
-  { key: 'IRPF', csvIdx: 32, sheetCol: 33 },
-  { key: 'Gross Invoice Amount (Recruiter)', csvIdx: 33, sheetCol: 34 },
-  { key: 'Payment Status', csvIdx: 34, sheetCol: 35 },
+// Base Margin column definitions (keys and sheet letters for writing)
+const MARGIN_COLUMNS_BASE = [
+  { key: 'Recruiter Name', keywords: [['recruiter', 'name'], ['reclutador']], sheetCol: 24 },
+  { key: 'Margin', keywords: [['margin'], ['margen']], sheetCol: 25 },
+  { key: 'Recruiter Commission', keywords: [['recruiter', 'commission'], ['comisión'], ['comision']], sheetCol: 26 },
+  { key: 'Collected by BT', keywords: [['collected', 'bt'], ['cobrado']], sheetCol: 27 },
+  { key: 'Invoice', keywords: [['invoice'], ['referencia'], ['ref']], sheetCol: 28 },
+  { key: 'Recruiter Invoice ID', keywords: [['invoice', 'id'], ['nº', 'factura']], sheetCol: 29 },
+  { key: 'Invoice Date (Recruiter)', keywords: [['invoice', 'date']], sheetCol: 30 },
+  { key: 'Due Date (Recruiter)', keywords: [['due', 'date']], sheetCol: 31 },
+  { key: 'VAT', keywords: [['vat'], ['iva']], sheetCol: 32 },
+  { key: 'IRPF', keywords: [['irpf']], sheetCol: 33 },
+  { key: 'Gross Invoice Amount (Recruiter)', keywords: [['gross'], ['importe', 'bruto']], sheetCol: 34 },
+  { key: 'Payment Status', keywords: [['payment', 'status']], sheetCol: 35 },
 ];
 
 // --- Helpers ---
@@ -58,73 +59,112 @@ function getSheetsClient() {
 
 // === PUBLIC API ===
 
+/** 
+ * Helper to find column index by a prioritized list of keyword sets.
+ * Example: findIdx(headers, [['id', 'factura'], ['factura'], ['id']])
+ */
+function findIdx(headers, prioritizedKeywords) {
+  for (const keywords of prioritizedKeywords) {
+    const idx = headers.findIndex(h => {
+      const lowerH = (h || '').toLowerCase().trim();
+      return keywords.every(k => lowerH.includes(k.toLowerCase()));
+    });
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+/** 
+ * Discover the header row and its column mapping by scanning the first few rows.
+ */
+function discoverHeaders(rows) {
+  const CRITICAL_KEYWORDS = ['cliente', 'candidato', 'factura'];
+  let headerRowIdx = -1;
+  let headers = [];
+
+  // Scan first 10 rows for something that looks like a header
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const row = rows[i].map(h => String(h).toLowerCase().trim());
+    const matchCount = CRITICAL_KEYWORDS.filter(k => row.some(cell => cell.includes(k))).length;
+    if (matchCount >= 2) { // Found it
+      headerRowIdx = i;
+      headers = rows[i].map(h => String(h).trim());
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1) return null;
+
+  return {
+    index: headerRowIdx,
+    headers: headers,
+    mapping: {
+      id:       findIdx(headers, [['id', 'factura'], ['factura'], ['id'], ['nº']]),
+      client:   findIdx(headers, [['cliente'], ['company'], ['empresa']]),
+      proc:     findIdx(headers, [['proceso'], ['posición'], ['puesto'], ['job']]),
+      cand:     findIdx(headers, [['candidato'], ['nombre'], ['candidate']]),
+      date:     findIdx(headers, [['fecha', 'factura'], ['fecha']]),
+      status:   findIdx(headers, [['estado'], ['status']]),
+      estPay:   findIdx(headers, [['fecha', 'est', 'pago'], ['estimada', 'pago'], ['vencimiento']]),
+      pay:      findIdx(headers, [['fecha', 'cobro'], ['fecha', 'pago'], ['cobro']]),
+      fee:      findIdx(headers, [['fee', '%'], ['tarifa']]),
+      amt:      findIdx(headers, [['importe', 'factura'], ['importe'], ['total']]),
+      sal:      findIdx(headers, [['salario', 'fijo'], ['salario'], ['fix']])
+    },
+    marginMapping: MARGIN_COLUMNS_BASE.map(col => ({
+      ...col,
+      csvIdx: findIdx(headers, col.keywords)
+    }))
+  };
+}
+
 /** Fetch invoice data and map to Biloop JSON schema using real-time API */
 export async function fetchInvoiceData() {
   const sheets = getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${WORKSHEET_NAME}!A4:AJ`,
+    range: `${WORKSHEET_NAME}!A1:AJ`, // Start from A1 to discover headers
   });
 
-  const rows = response.data.values;
-  if (!rows || rows.length === 0) return [];
+  const allRows = response.data.values;
+  if (!allRows || allRows.length === 0) return [];
 
-  const headers = rows[0].map(h => String(h).trim());
-  const dataRows = rows.slice(1);
+  const discovery = discoverHeaders(allRows);
+  if (!discovery) {
+      console.error('Failed to discover headers in sheet.');
+      return [];
+  }
+
+  const { mapping, index: headerIdx } = discovery;
+  const dataRows = allRows.slice(headerIdx + 1);
   const validRows = [];
 
-    // Helper to find index by header keywords (case-insensitive)
-    const findIdx = (keywords) => {
-        return headers.findIndex(h => {
-            const lowerH = (h || '').toLowerCase().trim();
-            return keywords.every(k => lowerH.includes(k.toLowerCase()));
-        });
-    };
-
-    const idIdx     = findIdx(['id', 'factura']);
-    const clientIdx = findIdx(['cliente']);
-    const procIdx   = findIdx(['proceso']);
-    const candIdx   = findIdx(['candidato']);
-    const dateIdx   = findIdx(['fecha', 'factura']);
-    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
-    const estPayIdx = findIdx(['fecha', 'est', 'pago']) === -1 ? findIdx(['estimada', 'pago']) : findIdx(['fecha', 'est', 'pago']);
-    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
-    const feeIdx    = findIdx(['fee', '%']);
-    const amtIdx    = findIdx(['importe', 'factura']);
-    const salIdx    = findIdx(['salario', 'fijo']);
-
-    dataRows.forEach((rowCells, i) => {
-        const idVal = rowCells[idIdx] || '';
-        
-        if (idVal && String(idVal).trim() !== '') {
-            const invoiceDate = (rowCells[dateIdx] || '').trim();
-            const status      = (rowCells[statusIdx] || '').trim();
-            const estPayDate  = (rowCells[estPayIdx] || '').trim();
-            const payDate     = (rowCells[payIdx] || '').trim();
-
-            validRows.push({
-                // Original keys (for UI)
-                Cliente: (rowCells[clientIdx] || '').trim(),
-                Proceso: (rowCells[procIdx] || '').trim(),
-                Candidato: (rowCells[candIdx] || '').trim(),
-                'Fecha Factura': invoiceDate,
-                Fee: cleanPercentage(rowCells[feeIdx] || 0),
-                Salario: cleanCurrency(rowCells[salIdx] || 0),
-                'Importe factura': cleanCurrency(rowCells[amtIdx] || 0),
-                Status: status,
-                'Estimated Payment Date': estPayDate,
-                'Payment Date': payDate,
-
-                // Biloop-optimized keys
-                'ID Factura Dinámica': String(idVal).trim(),
-                'Candidate Name': (rowCells[candIdx] || '').trim(),
-                'Due Date': estPayDate,
-                'Fee %': cleanPercentage(rowCells[feeIdx] || 0),
-                
-                _sheet_row_index: i + 5, // Row 4 was headers, so first data row is 5
-            });
-        }
-    });
+  dataRows.forEach((rowCells, i) => {
+    const idVal = mapping.id !== -1 ? (rowCells[mapping.id] || '') : '';
+    
+    // We need at least an ID or a Client name to consider it a valid row
+    const clientVal = mapping.client !== -1 ? (rowCells[mapping.client] || '') : '';
+    
+    if ((idVal && String(idVal).trim() !== '') || (clientVal && String(clientVal).trim() !== '')) {
+      validRows.push({
+        Cliente: clientVal.trim(),
+        Proceso: mapping.proc !== -1 ? (rowCells[mapping.proc] || '').trim() : '',
+        Candidato: mapping.cand !== -1 ? (rowCells[mapping.cand] || '').trim() : '',
+        'Fecha Factura': mapping.date !== -1 ? (rowCells[mapping.date] || '').trim() : '',
+        Fee: mapping.fee !== -1 ? cleanPercentage(rowCells[mapping.fee] || 0) : 0,
+        Salario: mapping.sal !== -1 ? cleanCurrency(rowCells[mapping.sal] || 0) : 0,
+        'Importe factura': mapping.amt !== -1 ? cleanCurrency(rowCells[mapping.amt] || 0) : 0,
+        Status: mapping.status !== -1 ? (rowCells[mapping.status] || '').trim() : '',
+        'Estimated Payment Date': mapping.estPay !== -1 ? (rowCells[mapping.estPay] || '').trim() : '',
+        'Payment Date': mapping.pay !== -1 ? (rowCells[mapping.pay] || '').trim() : '',
+        'ID Factura Dinámica': String(idVal).trim(),
+        'Candidate Name': mapping.cand !== -1 ? (rowCells[mapping.cand] || '').trim() : '',
+        'Due Date': mapping.estPay !== -1 ? (rowCells[mapping.estPay] || '').trim() : '',
+        'Fee %': mapping.fee !== -1 ? cleanPercentage(rowCells[mapping.fee] || 0) : 0,
+        _sheet_row_index: headerIdx + i + 2, // +1 for 0-index to 1-index, +1 for row following header
+      });
+    }
+  });
 
   return validRows;
 }
@@ -134,51 +174,45 @@ export async function fetchMarginData() {
   const sheets = getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${WORKSHEET_NAME}!A4:AJ`,
+    range: `${WORKSHEET_NAME}!A1:AJ`,
   });
 
-  const rows = response.data.values;
-  if (!rows || rows.length === 0) return [];
+  const allRows = response.data.values;
+  if (!allRows || allRows.length === 0) return [];
 
-  const headers = rows[0].map(h => String(h).trim());
-  const dataRows = rows.slice(1);
+  const discovery = discoverHeaders(allRows);
+  if (!discovery) return [];
+
+  const { mapping, index: headerIdx } = discovery;
+  const dataRows = allRows.slice(headerIdx + 1);
   const validRows = [];
 
-    // Helper to find index by header keywords (case-insensitive)
-    const findIdx = (keywords) => {
-        return headers.findIndex(h => {
-            const lowerH = (h || '').toLowerCase().trim();
-            return keywords.every(k => lowerH.includes(k.toLowerCase()));
-        });
-    };
+  dataRows.forEach((cells, i) => {
+    const idVal = mapping.id !== -1 ? (cells[mapping.id] || '') : '';
+    const clientVal = mapping.client !== -1 ? (cells[mapping.client] || '') : '';
+    
+    if ((idVal && String(idVal).trim() !== '') || (clientVal && String(clientVal).trim() !== '')) {
+      const record = {
+        _sheet_row_index: headerIdx + i + 2,
+        _invoice_id: String(idVal).trim(),
+        _client_name: clientVal.trim(),
+        _candidate_name: mapping.cand !== -1 ? (cells[mapping.cand] || '').trim() : '',
+        _status: mapping.status !== -1 ? (cells[mapping.status] || '').trim() : '',
+        _payment_date: mapping.pay !== -1 ? (cells[mapping.pay] || '').trim() : '',
+      };
 
-    const idIdx     = findIdx(['id', 'factura']);
-    const clientIdx = findIdx(['cliente']);
-    const candIdx   = findIdx(['candidato']);
-    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
-    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
-
-    dataRows.forEach((cells, i) => {
-        const idVal = cells[idIdx] || '';
-        
-        if (idVal && String(idVal).trim() !== '') {
-            const record = {
-                _sheet_row_index: i + 5,
-                _invoice_id: String(idVal).trim(),
-                _client_name: (cells[clientIdx] || '').trim(),
-                _candidate_name: (cells[candIdx] || '').trim(),
-                _status: (cells[statusIdx] || '').trim(),
-                _payment_date: (cells[payIdx] || '').trim(),
-            };
-
-            for (const col of MARGIN_COLUMNS) {
-                const val = cells[col.csvIdx];
-                record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
-            }
-
-            validRows.push(record);
+      for (const col of discovery.marginMapping) {
+        if (col.csvIdx !== -1) {
+          const val = cells[col.csvIdx];
+          record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
+        } else {
+          record[col.key] = '';
         }
-    });
+      }
+
+      validRows.push(record);
+    }
+  });
 
   return validRows;
 }
@@ -359,4 +393,4 @@ export async function createNewInvoice(invoiceData) {
   return { success: true, message: `New invoice ${nextId} created.`, invoice_id: nextId };
 }
 
-export { MARGIN_COLUMNS };
+export const MARGIN_COLUMNS = MARGIN_COLUMNS_BASE; // For backwards compatibility if needed
