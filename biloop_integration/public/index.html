@@ -1646,31 +1646,31 @@
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         
-        // Helper to convert DD/MM/YYYY or other formats to YYYY-MM-DD for <input type="date">
+        // Robust helper to convert various date formats (DD/MM/YYYY, DD.MM.YYYY, etc.) to YYYY-MM-DD
         const toISODate = (val) => {
             if (!val) return "";
             val = String(val).trim();
-            // Handle DD/MM/YYYY
-            if (val.includes('/')) {
-                const parts = val.split('/');
-                if (parts.length === 3) {
-                    const day   = parts[0].padStart(2, '0');
-                    const month = parts[1].padStart(2, '0');
-                    const year  = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                    return `${year}-${month}-${day}`;
-                }
+            // Match 3 numeric parts separated by common delimiters
+            const parts = val.match(/(\d{1,4})/g);
+            if (!parts || parts.length < 3) return val;
+
+            let day, month, year;
+
+            if (parts[0].length === 4) {
+                // Assume YYYY-MM-DD
+                year = parts[0];
+                month = parts[1].padStart(2, '0');
+                day = parts[2].padStart(2, '0');
+            } else {
+                // Assume DD-MM-YYYY
+                day = parts[0].padStart(2, '0');
+                month = parts[1].padStart(2, '0');
+                year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
             }
-            // Handle DD-MM-YYYY
-            if (val.includes('-') && val.split('-')[0].length <= 2) {
-                const parts = val.split('-');
-                if (parts.length === 3) {
-                    const day   = parts[0].padStart(2, '0');
-                    const month = parts[1].padStart(2, '0');
-                    const year  = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                    return `${year}-${month}-${day}`;
-                }
+
+            if (year && month && day && year.length === 4) {
+                return `${year}-${month}-${day}`;
             }
-            // Already YYYY-MM-DD or other
             return val;
         };
 

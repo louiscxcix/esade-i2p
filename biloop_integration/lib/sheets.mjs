@@ -73,46 +73,58 @@ export async function fetchInvoiceData() {
   const dataRows = rows.slice(1);
   const validRows = [];
 
-  dataRows.forEach((rowCells, i) => {
-    const row = {};
-    headers.forEach((h, idx) => {
-      row[h] = rowCells[idx] ? String(rowCells[idx]).trim() : '';
-    });
+    // Helper to find index by header keywords (case-insensitive)
+    const findIdx = (keywords) => {
+        return headers.findIndex(h => {
+            const lowerH = (h || '').toLowerCase().trim();
+            return keywords.every(k => lowerH.includes(k.toLowerCase()));
+        });
+    };
 
-    if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
-      // Robust header-based mapping
-      const invoiceDate = (row['Fecha Factura'] || '').trim();
-      const status      = (row['Estado'] || row['Status'] || '').trim();
-      const estPayDate  = (row['Fecha Est. Pago'] || row['Fecha Estimada de Pago'] || '').trim();
-      const payDate     = (row['Fecha Cobro'] || row['Fecha de Cobro'] || '').trim();
+    const idIdx     = findIdx(['id', 'factura']);
+    const clientIdx = findIdx(['cliente']);
+    const procIdx   = findIdx(['proceso']);
+    const candIdx   = findIdx(['candidato']);
+    const dateIdx   = findIdx(['fecha', 'factura']);
+    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
+    const estPayIdx = findIdx(['fecha', 'est', 'pago']) === -1 ? findIdx(['estimada', 'pago']) : findIdx(['fecha', 'est', 'pago']);
+    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
+    const feeIdx    = findIdx(['fee', '%']);
+    const amtIdx    = findIdx(['importe', 'factura']);
+    const salIdx    = findIdx(['salario', 'fijo']);
 
-      validRows.push({
-        // Original keys (for UI)
-        Cliente: (row['Cliente'] || '').trim(),
-        Proceso: (row['Proceso'] || '').trim(),
-        Candidato: (row['Candidato'] || '').trim(),
-        'Fecha Factura': invoiceDate,
-        Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
-        Salario: cleanCurrency(row['Salario fijo'] || 0),
-        'Importe factura': cleanCurrency(row['Importe Factura'] || 0),
-        'Descuento (%)': cleanPercentage(row['Descuento %'] || 0),
-        'Factura neta': cleanCurrency(row['Factura Neta'] || 0),
-        IVA: cleanCurrency(row['IVA'] || 0),
-        'Importe Cobro': cleanCurrency(row['Factura Bruto'] || 0),
-        Status: status,
-        'Estimated Payment Date': estPayDate,
-        'Payment Date': payDate,
-
-        // Biloop-optimized keys
-        'ID Factura Dinámica': (row['ID Factura'] || '').trim(),
-        'Candidate Name': (row['Candidato'] || '').trim(),
-        'Due Date': estPayDate,
-        'Fee %': cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
+    dataRows.forEach((rowCells, i) => {
+        const idVal = rowCells[idIdx] || '';
         
-        _sheet_row_index: i + 5, // Row 4 was headers, so first data row is 5
-      });
-    }
-  });
+        if (idVal && String(idVal).trim() !== '') {
+            const invoiceDate = (rowCells[dateIdx] || '').trim();
+            const status      = (rowCells[statusIdx] || '').trim();
+            const estPayDate  = (rowCells[estPayIdx] || '').trim();
+            const payDate     = (rowCells[payIdx] || '').trim();
+
+            validRows.push({
+                // Original keys (for UI)
+                Cliente: (rowCells[clientIdx] || '').trim(),
+                Proceso: (rowCells[procIdx] || '').trim(),
+                Candidato: (rowCells[candIdx] || '').trim(),
+                'Fecha Factura': invoiceDate,
+                Fee: cleanPercentage(rowCells[feeIdx] || 0),
+                Salario: cleanCurrency(rowCells[salIdx] || 0),
+                'Importe factura': cleanCurrency(rowCells[amtIdx] || 0),
+                Status: status,
+                'Estimated Payment Date': estPayDate,
+                'Payment Date': payDate,
+
+                // Biloop-optimized keys
+                'ID Factura Dinámica': String(idVal).trim(),
+                'Candidate Name': (rowCells[candIdx] || '').trim(),
+                'Due Date': estPayDate,
+                'Fee %': cleanPercentage(rowCells[feeIdx] || 0),
+                
+                _sheet_row_index: i + 5, // Row 4 was headers, so first data row is 5
+            });
+        }
+    });
 
   return validRows;
 }
