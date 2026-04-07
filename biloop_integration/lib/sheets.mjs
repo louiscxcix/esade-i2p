@@ -144,30 +144,41 @@ export async function fetchMarginData() {
   const dataRows = rows.slice(1);
   const validRows = [];
 
-  dataRows.forEach((cells, i) => {
-    const row = {};
-    headers.forEach((h, idx) => {
-      row[h] = cells[idx] ? String(cells[idx]).trim() : '';
+    // Helper to find index by header keywords (case-insensitive)
+    const findIdx = (keywords) => {
+        return headers.findIndex(h => {
+            const lowerH = (h || '').toLowerCase().trim();
+            return keywords.every(k => lowerH.includes(k.toLowerCase()));
+        });
+    };
+
+    const idIdx     = findIdx(['id', 'factura']);
+    const clientIdx = findIdx(['cliente']);
+    const candIdx   = findIdx(['candidato']);
+    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
+    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
+
+    dataRows.forEach((cells, i) => {
+        const idVal = cells[idIdx] || '';
+        
+        if (idVal && String(idVal).trim() !== '') {
+            const record = {
+                _sheet_row_index: i + 5,
+                _invoice_id: String(idVal).trim(),
+                _client_name: (cells[clientIdx] || '').trim(),
+                _candidate_name: (cells[candIdx] || '').trim(),
+                _status: (cells[statusIdx] || '').trim(),
+                _payment_date: (cells[payIdx] || '').trim(),
+            };
+
+            for (const col of MARGIN_COLUMNS) {
+                const val = cells[col.csvIdx];
+                record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
+            }
+
+            validRows.push(record);
+        }
     });
-
-    if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
-      const record = {
-        _sheet_row_index: i + 5,
-        _invoice_id: (row['ID Factura'] || '').trim(),
-        _client_name: (row['Cliente'] || '').trim(),
-        _candidate_name: (row['Candidato'] || '').trim(),
-        _status: cells[19] ? String(cells[19]).trim() : '', // Col T = index 19
-        _payment_date: cells[21] ? String(cells[21]).trim() : '', // Col V = index 21
-      };
-
-      for (const col of MARGIN_COLUMNS) {
-        const val = cells[col.csvIdx];
-        record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
-      }
-
-      validRows.push(record);
-    }
-  });
 
   return validRows;
 }
