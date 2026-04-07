@@ -118,8 +118,11 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   const payload = {
     company_id: "E67652",
+    customer_id: "0", // Map to Generic Client to allow name/NIF overrides
     master_name: clientName,
-    address: "Biloop Integration Address",
+    master_razon_social: clientName,
+    ERP_customer_name: clientName,
+    address: "", // Clear template address (Parque Tecnologico)
     date: dateStr,
     operation_date: dateStr,
     due_date: dueDateStr || dateStr,
