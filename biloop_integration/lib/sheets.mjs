@@ -81,7 +81,7 @@ export async function fetchInvoiceData() {
         });
     };
 
-    const idIdx     = findIdx(['id', 'factura']);
+    const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
     const clientIdx = findIdx(['cliente']);
     const procIdx   = findIdx(['proceso']);
     const candIdx   = findIdx(['candidato']);
@@ -95,8 +95,10 @@ export async function fetchInvoiceData() {
 
     dataRows.forEach((rowCells, i) => {
         const idVal = rowCells[idIdx] || '';
+        const clientVal = (rowCells[clientIdx] || '').trim();
+        const candVal = (rowCells[candIdx] || '').trim();
         
-        if (idVal && String(idVal).trim() !== '') {
+        if ((idVal && String(idVal).trim() !== '') || clientVal !== '' || candVal !== '') {
             const invoiceDate = (rowCells[dateIdx] || '').trim();
             const status      = (rowCells[statusIdx] || '').trim();
             const estPayDate  = (rowCells[estPayIdx] || '').trim();
@@ -152,7 +154,7 @@ export async function fetchMarginData() {
         });
     };
 
-    const idIdx     = findIdx(['id', 'factura']);
+    const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
     const clientIdx = findIdx(['cliente']);
     const candIdx   = findIdx(['candidato']);
     const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
@@ -160,8 +162,10 @@ export async function fetchMarginData() {
 
     dataRows.forEach((cells, i) => {
         const idVal = cells[idIdx] || '';
+        const clientVal = (cells[clientIdx] || '').trim();
+        const candVal = (cells[candIdx] || '').trim();
         
-        if (idVal && String(idVal).trim() !== '') {
+        if ((idVal && String(idVal).trim() !== '') || clientVal !== '' || candVal !== '') {
             const record = {
                 _sheet_row_index: i + 5,
                 _invoice_id: String(idVal).trim(),
