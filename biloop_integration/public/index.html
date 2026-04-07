@@ -1525,6 +1525,34 @@
 <script>
 
         
+    // Robust helper to convert various date formats (DD/MM/YYYY, DD.MM.YYYY, etc.) to YYYY-MM-DD
+    const toISODate = (val) => {
+        if (!val) return "";
+        val = String(val).trim();
+        // Match 3 numeric parts separated by common delimiters
+        const parts = val.match(/(\d{1,4})/g);
+        if (!parts || parts.length < 3) return "";
+
+        let day, month, year;
+
+        if (parts[0].length === 4) {
+            // Assume YYYY-MM-DD
+            year = parts[0];
+            month = parts[1].padStart(2, '0');
+            day = parts[2].padStart(2, '0');
+        } else {
+            // Assume DD-MM-YYYY
+            day = parts[0].padStart(2, '0');
+            month = parts[1].padStart(2, '0');
+            year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        }
+
+        if (year && month && day && year.length === 4) {
+            return `${year}-${month}-${day}`;
+        }
+        return ""; // Return empty string for invalid dates to match input behavior
+    };
+
     // ===== Navigation =====
     function switchView(viewId, element) {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1679,33 +1707,6 @@
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         
-        // Robust helper to convert various date formats (DD/MM/YYYY, DD.MM.YYYY, etc.) to YYYY-MM-DD
-        const toISODate = (val) => {
-            if (!val) return "";
-            val = String(val).trim();
-            // Match 3 numeric parts separated by common delimiters
-            const parts = val.match(/(\d{1,4})/g);
-            if (!parts || parts.length < 3) return "";
-
-            let day, month, year;
-
-            if (parts[0].length === 4) {
-                // Assume YYYY-MM-DD
-                year = parts[0];
-                month = parts[1].padStart(2, '0');
-                day = parts[2].padStart(2, '0');
-            } else {
-                // Assume DD-MM-YYYY
-                day = parts[0].padStart(2, '0');
-                month = parts[1].padStart(2, '0');
-                year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-            }
-
-            if (year && month && day && year.length === 4) {
-                return `${year}-${month}-${day}`;
-            }
-            return ""; // Return empty string for invalid dates to match input behavior
-        };
 
         data.forEach((invoice, index) => {
             const formattedDate = toISODate(invoice['Fecha Factura']);
@@ -2140,13 +2141,7 @@
             `;
 
             const payRaw = record._payment_date || '';
-            let payFormatted = '';
-            if (payRaw && payRaw.includes('/')) {
-                const pp = payRaw.split('/');
-                if (pp.length === 3) payFormatted = `${pp[2]}-${pp[1]}-${pp[0]}`;
-            } else {
-                payFormatted = payRaw;
-            }
+            const payFormatted = toISODate(payRaw);
 
             html += `
                 <td>
@@ -2174,9 +2169,11 @@
             const statusSelect = tr.querySelector('.margin-status-select');
             const paydateInput = tr.querySelector('.margin-paydate-input');
             
-            marginInputs.forEach(i => { if(i.value !== i.getAttribute('data-original')) rowUnsaved = true; });
-            if (statusSelect && statusSelect.value !== statusSelect.getAttribute('data-original')) rowUnsaved = true;
-            if (paydateInput && paydateInput.value !== paydateInput.getAttribute('data-original')) rowUnsaved = true;
+            marginInputs.forEach(i => { 
+                if (i.value.trim() !== (i.getAttribute('data-original') || '').trim()) rowUnsaved = true; 
+            });
+            if (statusSelect && statusSelect.value.trim() !== (statusSelect.getAttribute('data-original') || '').trim()) rowUnsaved = true;
+            if (paydateInput && paydateInput.value.trim() !== (paydateInput.getAttribute('data-original') || '').trim()) rowUnsaved = true;
             
             if (rowUnsaved) {
                 tr.classList.add('unsaved');
