@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { fetchRawCSVText, fetchMarginData } from '../../lib/sheets.mjs';
+import { fetchInvoiceData, fetchMarginData } from '../../lib/sheets.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') {
@@ -21,12 +21,15 @@ export default async (req) => {
     }
 
     // Build context from Google Sheets
-    const [csvText, marginData] = await Promise.all([
-      fetchRawCSVText(),
+    // Using fetchInvoiceData instead of raw CSV to ensure the AI sees the fixed mappings
+    const [invoiceData, marginData] = await Promise.all([
+      fetchInvoiceData(),
       fetchMarginData(),
     ]);
 
-    let context = 'Here is the current Invoice Data:\n' + csvText;
+    let context = 'Here is the current Invoice Data (Cleaned & Mapped):\n';
+    context += JSON.stringify(invoiceData.slice(0, 80), null, 2);
+    
     context += '\n\nHere is the current Margin/Recruiter Data (Columns W-AH):\n';
     if (marginData && marginData.length > 0) {
       context += JSON.stringify(marginData.slice(0, 50), null, 2);
@@ -36,7 +39,7 @@ export default async (req) => {
 
     const systemPrompt = `You are an AI Co-pilot for an internal invoicing and margin dashboard. You answer questions about the following spreadsheet data:\n\n${context}\n\nHelp the user with data-driven insights. Be concise and format answers in nice markdown.`;
 
-    const selectedModelName = data.model || 'gemini-2.5-flash';
+    const selectedModelName = data.model || 'gemini-3-flash-preview';
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({

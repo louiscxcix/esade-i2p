@@ -88,91 +88,99 @@ async function fetchCSV() {
 
 /** Fetch invoice data and map to Biloop JSON schema */
 export async function fetchInvoiceData() {
-  // We need raw cell access for column T (Estimated Payment Date, csvIdx 19)
   const response = await fetch(CSV_URL);
   if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
   const text = await response.text();
   const lines = text.split('\n');
   const csvWithoutPreamble = lines.slice(3).join('\n');
-  const parsed = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
-  if (parsed.meta && parsed.meta.fields) {
-    parsed.data = parsed.data.map(row => {
-      const newRow = {};
-      for (const [key, val] of Object.entries(row)) {
-        newRow[key.trim()] = val;
-      }
-      return newRow;
-    });
-  }
-  const rows = parsed.data.filter(row => row['ID Factura'] && String(row['ID Factura']).trim() !== '');
+  
+  const parsedHeaders = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
+  const parsedRows = Papa.parse(csvWithoutPreamble, { header: false, skipEmptyLines: true });
 
-  return rows.map((row, index) => {
-    // Access required columns by index from the raw line
-    const dataLine = lines[index + 4]; // 3 preamble + 1 header + data start
-    const rowCells = Papa.parse(dataLine, { header: false }).data[0] || [];
+  const validRows = [];
+
+  for (let i = 1; i < parsedRows.data.length; i++) {
+    const rowCells = parsedRows.data[i] || [];
+    const headerRow = parsedHeaders.data[i - 1] || {};
     
-    // Explicit column mapping as requested:
-    // L = 11, T = 19, U = 20, V = 21
-    const invoiceDate = rowCells[11] ? String(rowCells[11]).trim() : '';
-    const status = rowCells[19] ? String(rowCells[19]).trim() : '';
-    const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : '';
-    const payDate = rowCells[21] ? String(rowCells[21]).trim() : '';
+    const row = {};
+    for (const [key, val] of Object.entries(headerRow)) {
+      row[key.trim()] = val;
+    }
 
-    return {
-      Cliente: (row['Cliente'] || '').trim(),
-      Proceso: (row['Proceso'] || '').trim(),
-      Candidato: (row['Candidato'] || '').trim(),
-      'Fecha Factura': invoiceDate,
-      Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
-      Salario: cleanCurrency(row['Salario fijo'] || 0),
-      'Importe factura': cleanCurrency(row['Importe Factura'] || 0),
-      'Descuento (%)': cleanPercentage(row['Descuento %'] || 0),
-      'Factura neta': cleanCurrency(row['Factura Neta'] || 0),
-      IVA: cleanCurrency(row['IVA'] || 0),
-      'Importe Cobro': cleanCurrency(row['Factura Bruto'] || 0),
-      Status: status,
-      'Estimated Payment Date': estPayDate,
-      'Payment Date': payDate,
-      _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
-    };
-  });
+    if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
+      // Explicit column mapping as requested:
+      // L = 11, T = 19, U = 20, V = 21
+      const invoiceDate = rowCells[11] ? String(rowCells[11]).trim() : '';
+      const status = rowCells[19] ? String(rowCells[19]).trim() : '';
+      const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : '';
+      const payDate = rowCells[21] ? String(rowCells[21]).trim() : '';
+
+      validRows.push({
+        Cliente: (row['Cliente'] || '').trim(),
+        Proceso: (row['Proceso'] || '').trim(),
+        Candidato: (row['Candidato'] || '').trim(),
+        'Fecha Factura': invoiceDate,
+        Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
+        Salario: cleanCurrency(row['Salario fijo'] || 0),
+        'Importe factura': cleanCurrency(row['Importe Factura'] || 0),
+        'Descuento (%)': cleanPercentage(row['Descuento %'] || 0),
+        'Factura neta': cleanCurrency(row['Factura Neta'] || 0),
+        IVA: cleanCurrency(row['IVA'] || 0),
+        'Importe Cobro': cleanCurrency(row['Factura Bruto'] || 0),
+        Status: status,
+        'Estimated Payment Date': estPayDate,
+        'Payment Date': payDate,
+        _sheet_row_index: i + 4, // 0-based i + 4 = 1-based sheet row index (row 4 is headers)
+      });
+    }
+  }
+
+  return validRows;
 }
 
 /** Fetch margin data (columns W-AH) from Sheet 1 */
 export async function fetchMarginData() {
-  const rows = await fetchCSV();
-
-  // Get the raw field names (before trimming in the ordered way)
-  // We need to access by column index for W-AH since column names may have duplicates
   const response = await fetch(CSV_URL);
+  if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
   const text = await response.text();
   const lines = text.split('\n');
-  const headerLine = lines[3]; // Row 4 = real headers
-  const headerParsed = Papa.parse(headerLine, { header: false });
-  const headers = headerParsed.data[0] || [];
+  const csvWithoutPreamble = lines.slice(3).join('\n');
+  
+  const parsedHeaders = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
+  const parsedRows = Papa.parse(csvWithoutPreamble, { header: false, skipEmptyLines: true });
 
-  return rows.map((row, index) => {
-    // Re-parse this row by index to get W-AH columns
-    const dataLine = lines[index + 4]; // +4 because 3 preamble rows + 1 header row
-    const rowParsed = Papa.parse(dataLine, { header: false });
-    const cells = rowParsed.data[0] || [];
+  const validRows = [];
 
-    const record = {
-      _sheet_row_index: index + 5,
-      _invoice_id: (row['ID Factura'] || '').trim(),
-      _client_name: (row['Cliente'] || '').trim(),
-      _candidate_name: (row['Candidato'] || '').trim(),
-      _status: cells[19] ? String(cells[19]).trim() : '', // Col T = index 19
-      _payment_date: cells[21] ? String(cells[21]).trim() : '', // Col V = index 21
-    };
-
-    for (const col of MARGIN_COLUMNS) {
-      const val = cells[col.csvIdx];
-      record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
+  for (let i = 1; i < parsedRows.data.length; i++) {
+    const cells = parsedRows.data[i] || [];
+    const headerRow = parsedHeaders.data[i - 1] || {};
+    
+    const row = {};
+    for (const [key, val] of Object.entries(headerRow)) {
+      row[key.trim()] = val;
     }
 
-    return record;
-  });
+    if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
+      const record = {
+        _sheet_row_index: i + 4,
+        _invoice_id: (row['ID Factura'] || '').trim(),
+        _client_name: (row['Cliente'] || '').trim(),
+        _candidate_name: (row['Candidato'] || '').trim(),
+        _status: cells[19] ? String(cells[19]).trim() : '', // Col T = index 19
+        _payment_date: cells[21] ? String(cells[21]).trim() : '', // Col V = index 21
+      };
+
+      for (const col of MARGIN_COLUMNS) {
+        const val = cells[col.csvIdx];
+        record[col.key] = (val != null && val !== '') ? String(val).trim() : '';
+      }
+
+      validRows.push(record);
+    }
+  }
+
+  return validRows;
 }
 
 /** Fetch raw CSV text for copilot context */
