@@ -81,7 +81,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  const resolvedNif = await getClientNif(clientName, token) || `G-${clientName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)}`;
+  const resolvedNif = await getClientNif(clientName, token) || `B-${clientName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)}`;
 
   // Core Financials and Identifiers
   const a3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
@@ -119,7 +119,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   const payload = {
     company_id: "E67652",
     master_name: clientName,
-    address: "", // Keep clean for PDF
+    address: "ESADE I2P Client Office", // Explicit placeholder to prevent Biloop template fallback (OPTARE)
     date: dateStr,
     operation_date: dateStr,
     issuance_date: dateStr, // From successful test log
@@ -154,7 +154,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   payload.master_nif = resolvedNif;
   
-  console.log("Biloop Payload to be sent:", JSON.stringify(payload, null, 2));
+  console.log("FINAL BILOOP PAYLOAD:", JSON.stringify(payload, null, 2));
 
   const headers = {
     token: token,
