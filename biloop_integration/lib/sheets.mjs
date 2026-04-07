@@ -107,17 +107,22 @@ export async function fetchInvoiceData() {
   const rows = parsed.data.filter(row => row['ID Factura'] && String(row['ID Factura']).trim() !== '');
 
   return rows.map((row, index) => {
-    // Access col U (Estimated Payment Date) by index from the raw line
+    // Access required columns by index from the raw line
     const dataLine = lines[index + 4]; // 3 preamble + 1 header + data start
     const rowCells = Papa.parse(dataLine, { header: false }).data[0] || [];
-    const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : ''; // col U = index 20
-    const payDate = rowCells[21] ? String(rowCells[21]).trim() : ''; // col V = index 21
+    
+    // Explicit column mapping as requested:
+    // L = 11, T = 19, U = 20, V = 21
+    const invoiceDate = rowCells[11] ? String(rowCells[11]).trim() : '';
+    const status = rowCells[19] ? String(rowCells[19]).trim() : '';
+    const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : '';
+    const payDate = rowCells[21] ? String(rowCells[21]).trim() : '';
 
     return {
       Cliente: (row['Cliente'] || '').trim(),
       Proceso: (row['Proceso'] || '').trim(),
       Candidato: (row['Candidato'] || '').trim(),
-      'Fecha Factura': (row['Fecha Factura'] || '').trim(),
+      'Fecha Factura': invoiceDate,
       Fee: cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
       Salario: cleanCurrency(row['Salario fijo'] || 0),
       'Importe factura': cleanCurrency(row['Importe Factura'] || 0),
@@ -125,7 +130,7 @@ export async function fetchInvoiceData() {
       'Factura neta': cleanCurrency(row['Factura Neta'] || 0),
       IVA: cleanCurrency(row['IVA'] || 0),
       'Importe Cobro': cleanCurrency(row['Factura Bruto'] || 0),
-      Status: (row['Estado'] || '').trim(),
+      Status: status,
       'Estimated Payment Date': estPayDate,
       'Payment Date': payDate,
       _sheet_row_index: index + 5, // row 5 onwards (0-based index + 4 header rows + 1 for 1-indexing)
@@ -157,8 +162,8 @@ export async function fetchMarginData() {
       _invoice_id: (row['ID Factura'] || '').trim(),
       _client_name: (row['Cliente'] || '').trim(),
       _candidate_name: (row['Candidato'] || '').trim(),
-      _status: (row['Estado'] || '').trim(),
-      _payment_date: cells[21] ? String(cells[21]).trim() : '',
+      _status: cells[19] ? String(cells[19]).trim() : '', // Col T = index 19
+      _payment_date: cells[21] ? String(cells[21]).trim() : '', // Col V = index 21
     };
 
     for (const col of MARGIN_COLUMNS) {
