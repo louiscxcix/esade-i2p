@@ -56,67 +56,38 @@ function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
-// --- CSV Fetch + Parse ---
-async function fetchCSV() {
-  const response = await fetch(CSV_URL);
-  if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
-  const text = await response.text();
-
-  // The CSV has 4 header rows; the real headers are on row 4 (0-indexed: 3)
-  const lines = text.split('\n');
-  // Drop the first 3 rows, keep from row 4 onwards
-  const csvWithoutPreamble = lines.slice(3).join('\n');
-
-  const parsed = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
-  // Trim column names
-  if (parsed.meta && parsed.meta.fields) {
-    const fieldMap = {};
-    parsed.meta.fields.forEach(f => { fieldMap[f] = f.trim(); });
-    parsed.data = parsed.data.map(row => {
-      const newRow = {};
-      for (const [key, val] of Object.entries(row)) {
-        newRow[key.trim()] = val;
-      }
-      return newRow;
-    });
-  }
-  // Filter to rows with ID Factura
-  return parsed.data.filter(row => row['ID Factura'] && String(row['ID Factura']).trim() !== '');
-}
-
 // === PUBLIC API ===
 
-/** Fetch invoice data and map to Biloop JSON schema */
+/** Fetch invoice data and map to Biloop JSON schema using real-time API */
 export async function fetchInvoiceData() {
-  const response = await fetch(CSV_URL);
-  if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
-  const text = await response.text();
-  const lines = text.split('\n');
-  const csvWithoutPreamble = lines.slice(3).join('\n');
-  
-  const parsedHeaders = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
-  const parsedRows = Papa.parse(csvWithoutPreamble, { header: false, skipEmptyLines: true });
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${WORKSHEET_NAME}!A4:AJ`,
+  });
 
+  const rows = response.data.values;
+  if (!rows || rows.length === 0) return [];
+
+  const headers = rows[0].map(h => String(h).trim());
+  const dataRows = rows.slice(1);
   const validRows = [];
 
-  for (let i = 1; i < parsedRows.data.length; i++) {
-    const rowCells = parsedRows.data[i] || [];
-    const headerRow = parsedHeaders.data[i - 1] || {};
-    
+  dataRows.forEach((rowCells, i) => {
     const row = {};
-    for (const [key, val] of Object.entries(headerRow)) {
-      row[key.trim()] = val;
-    }
+    headers.forEach((h, idx) => {
+      row[h] = rowCells[idx] ? String(rowCells[idx]).trim() : '';
+    });
 
     if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
-      // Explicit column mapping as requested:
-      // L = 11, T = 19, U = 20, V = 21
+      // Mapping: L=11, T=19, U=20, V=21
       const invoiceDate = rowCells[11] ? String(rowCells[11]).trim() : '';
       const status = rowCells[19] ? String(rowCells[19]).trim() : '';
       const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : '';
       const payDate = rowCells[21] ? String(rowCells[21]).trim() : '';
 
       validRows.push({
+        // Original keys (for UI)
         Cliente: (row['Cliente'] || '').trim(),
         Proceso: (row['Proceso'] || '').trim(),
         Candidato: (row['Candidato'] || '').trim(),
@@ -131,39 +102,45 @@ export async function fetchInvoiceData() {
         Status: status,
         'Estimated Payment Date': estPayDate,
         'Payment Date': payDate,
-        _sheet_row_index: i + 4, // 0-based i + 4 = 1-based sheet row index (row 4 is headers)
+
+        // Biloop-optimized keys
+        'ID Factura Dinámica': (row['ID Factura'] || '').trim(),
+        'Candidate Name': (row['Candidato'] || '').trim(),
+        'Due Date': estPayDate,
+        'Fee %': cleanPercentage(row['Fee %'] || row['Fee % '] || 0),
+        
+        _sheet_row_index: i + 5, // Row 4 was headers, so first data row is 5
       });
     }
-  }
+  });
 
   return validRows;
 }
 
-/** Fetch margin data (columns W-AH) from Sheet 1 */
+/** Fetch margin data (columns W-AH) from Sheet 1 using real-time API */
 export async function fetchMarginData() {
-  const response = await fetch(CSV_URL);
-  if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
-  const text = await response.text();
-  const lines = text.split('\n');
-  const csvWithoutPreamble = lines.slice(3).join('\n');
-  
-  const parsedHeaders = Papa.parse(csvWithoutPreamble, { header: true, skipEmptyLines: true });
-  const parsedRows = Papa.parse(csvWithoutPreamble, { header: false, skipEmptyLines: true });
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${WORKSHEET_NAME}!A4:AJ`,
+  });
 
+  const rows = response.data.values;
+  if (!rows || rows.length === 0) return [];
+
+  const headers = rows[0].map(h => String(h).trim());
+  const dataRows = rows.slice(1);
   const validRows = [];
 
-  for (let i = 1; i < parsedRows.data.length; i++) {
-    const cells = parsedRows.data[i] || [];
-    const headerRow = parsedHeaders.data[i - 1] || {};
-    
+  dataRows.forEach((cells, i) => {
     const row = {};
-    for (const [key, val] of Object.entries(headerRow)) {
-      row[key.trim()] = val;
-    }
+    headers.forEach((h, idx) => {
+      row[h] = cells[idx] ? String(cells[idx]).trim() : '';
+    });
 
     if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
       const record = {
-        _sheet_row_index: i + 4,
+        _sheet_row_index: i + 5,
         _invoice_id: (row['ID Factura'] || '').trim(),
         _client_name: (row['Cliente'] || '').trim(),
         _candidate_name: (row['Candidato'] || '').trim(),
@@ -178,19 +155,24 @@ export async function fetchMarginData() {
 
       validRows.push(record);
     }
-  }
+  });
 
   return validRows;
 }
 
-/** Fetch raw CSV text for copilot context */
+/** Fetch raw text for copilot context using real-time API */
 export async function fetchRawCSVText() {
-  const response = await fetch(CSV_URL);
-  if (!response.ok) return 'No data available.';
-  const text = await response.text();
-  const lines = text.split('\n');
-  return lines.slice(3).join('\n');
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${WORKSHEET_NAME}!A4:AJ`,
+  });
+  const rows = response.data.values;
+  if (!rows || rows.length === 0) return 'No data available.';
+  
+  return rows.map(r => r.join(',')).join('\n');
 }
+
 
 /** Update invoice dates in Sheet 1 */
 export async function updateInvoiceDates(updates) {
