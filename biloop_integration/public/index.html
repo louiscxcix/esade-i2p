@@ -60,6 +60,9 @@
             --purple:       #8b5cf6;
             --purple-bg:    rgba(139, 92, 246, 0.06);
             --purple-border:rgba(139, 92, 246, 0.15);
+            --orange:       #f97316;
+            --orange-bg:    rgba(249, 115, 22, 0.08);
+            --orange-border:rgba(249, 115, 22, 0.18);
 
             /* Layout tokens */
             --sidebar-w:   232px;
@@ -487,6 +490,8 @@
         }
 
         .status-badge.success { background: var(--green-bg); color: var(--green); }
+        .status-badge.warning { background: var(--yellow-bg); color: var(--yellow); }
+        .status-badge.orange  { background: var(--orange-bg); color: var(--orange); }
         .status-badge.error   { background: var(--red-bg);   color: var(--red); }
 
         .status-select {
@@ -508,14 +513,17 @@
         .status-select:hover { border-color: var(--border-strong); }
         .status-select:focus { outline: none; border-color: var(--accent); }
 
-        .status-select.paid {
+        .status-select.cobrado, .status-select.paid {
             background-color: var(--green-bg); border-color: var(--green-border); color: var(--green);
         }
-        .status-select.overdue {
+        .status-select.vencido, .status-select.overdue {
             background-color: var(--red-bg); border-color: var(--red-border); color: var(--red);
         }
-        .status-select.pending {
+        .status-select.pendiente, .status-select.pending {
             background-color: var(--yellow-bg); border-color: var(--yellow-border); color: var(--yellow);
+        }
+        .status-select.inminente {
+            background-color: var(--orange-bg); border-color: var(--orange-border); color: var(--orange);
         }
 
         .col-hint {
@@ -584,9 +592,10 @@
             transition: opacity var(--speed) var(--ease);
         }
         .stat-card:hover::before { opacity: 1; }
-        .stat-card.paid::before   { background: linear-gradient(90deg, transparent, var(--green), transparent); }
-        .stat-card.pending::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
-        .stat-card.overdue::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+        .stat-card.cobrado::before, .stat-card.paid::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+        .stat-card.pendiente::before, .stat-card.pending::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+        .stat-card.vencido::before, .stat-card.overdue::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+        .stat-card.inminente::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); }
 
         .stat-card-label {
             font-size: 11px;
@@ -615,12 +624,14 @@
             color: var(--text-primary);
         }
 
-        .stat-card.paid   .stat-card-value { color: var(--green); }
-        .stat-card.paid   .dot { background: var(--green); }
-        .stat-card.pending .stat-card-value { color: var(--yellow); }
-        .stat-card.pending .dot { background: var(--yellow); }
-        .stat-card.overdue .stat-card-value { color: var(--red); }
-        .stat-card.overdue .dot { background: var(--red); }
+        .stat-card.cobrado .stat-card-value, .stat-card.paid .stat-card-value { color: var(--green); }
+        .stat-card.cobrado .dot, .stat-card.paid .dot { background: var(--green); }
+        .stat-card.pendiente .stat-card-value, .stat-card.pending .stat-card-value { color: var(--yellow); }
+        .stat-card.pendiente .dot, .stat-card.pending .dot { background: var(--yellow); }
+        .stat-card.vencido .stat-card-value, .stat-card.overdue .stat-card-value { color: var(--red); }
+        .stat-card.vencido .dot, .stat-card.overdue .dot { background: var(--red); }
+        .stat-card.inminente .stat-card-value { color: var(--orange); }
+        .stat-card.inminente .dot { background: var(--orange); }
 
         /* Active filter state */
         .stat-card.filter-active {
@@ -1258,15 +1269,19 @@
             </header>
 
             <div class="stats-bar" id="statsBar" style="display:none;">
-                <div class="stat-card paid" onclick="toggleFilter('paid')">
-                    <span class="stat-card-label"><span class="dot"></span> Pagado</span>
+                <div class="stat-card cobrado" onclick="toggleFilter('cobrado')">
+                    <span class="stat-card-label"><span class="dot"></span> Cobrado</span>
                     <span class="stat-card-value" id="statPaid">—</span>
                 </div>
-                <div class="stat-card pending" onclick="toggleFilter('pending')">
+                <div class="stat-card inminente" onclick="toggleFilter('inminente')">
+                    <span class="stat-card-label"><span class="dot"></span> Inminente</span>
+                    <span class="stat-card-value" id="statImminent">—</span>
+                </div>
+                <div class="stat-card pendiente" onclick="toggleFilter('pendiente')">
                     <span class="stat-card-label"><span class="dot"></span> Pendiente</span>
                     <span class="stat-card-value" id="statPending">—</span>
                 </div>
-                <div class="stat-card overdue" onclick="toggleFilter('overdue')">
+                <div class="stat-card vencido" onclick="toggleFilter('vencido')">
                     <span class="stat-card-label"><span class="dot"></span> Vencido</span>
                     <span class="stat-card-value" id="statOverdue">—</span>
                 </div>
@@ -1680,14 +1695,17 @@
             const payFormatted = toISODate(invoice['Payment Date']);
 
             const sheetStatus = (invoice['Status'] || '').trim();
-            let statusClass = '';
             const statusLower = sheetStatus.toLowerCase();
-            if (statusLower.includes('paid') || statusLower.includes('pagada')) {
-                statusClass = 'paid';
-            } else if (statusLower.includes('overdue') || statusLower.includes('vencida')) {
-                statusClass = 'overdue';
+            let statusClass = '';
+
+            if (statusLower.includes('cobrado') || statusLower.includes('paid') || statusLower.includes('pagada')) {
+                statusClass = 'cobrado';
+            } else if (statusLower.includes('inminente')) {
+                statusClass = 'inminente';
+            } else if (statusLower.includes('vencido') || statusLower.includes('vencida') || statusLower.includes('overdue')) {
+                statusClass = 'vencido';
             } else {
-                statusClass = 'pending';
+                statusClass = 'pendiente';
             }
 
             // Build the Invoice display ID like 20260301-01 based on date and index
@@ -1735,10 +1753,10 @@
                     <select class="status-select ${statusClass}" id="status-${index}"
                             data-original="${sheetStatus}" data-row="${invoice['_sheet_row_index']}"
                             onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
-                        <option value="Pending" ${statusClass === 'pending' ? 'selected' : ''}>Pendiente</option>
-                        <option value="Paid" ${statusClass === 'paid' ? 'selected' : ''}>Pagada</option>
-                        <option value="Overdue" ${statusClass === 'overdue' ? 'selected' : ''}>Vencida</option>
-                        <option value="Cancelled" ${statusClass === 'cancelled' ? 'selected' : ''}>Cancelada</option>
+                        <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
+                        <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
+                        <option value="Vencido" ${statusClass === 'vencido' ? 'selected' : ''}>Vencido</option>
                     </select>
                 </td>
                 <td>
@@ -1774,25 +1792,29 @@
     }
 
     function updateStatsBar(data) {
-        const total = data.length;
-        const totalAmt = data.reduce((sum, inv) => sum + (inv['Importe factura'] || 0), 0);
-        const paid    = data.filter(inv => /paid/i.test(inv['Status']) && !/overdue/i.test(inv['Status'])).length;
-        const overdue = data.filter(inv => /overdue/i.test(inv['Status'])).length;
-        const pending = total - paid - overdue;
+        const counts = data.reduce((acc, inv) => {
+            const status = (inv['Status'] || '').toLowerCase();
+            if (status.includes('cobrado') || status.includes('paid') || status.includes('pagada')) acc.cobrado++;
+            else if (status.includes('inminente')) acc.inminente++;
+            else if (status.includes('vencido') || status.includes('vencida') || status.includes('overdue')) acc.vencido++;
+            else acc.pendiente++;
+            return acc;
+        }, { cobrado: 0, inminente: 0, pendiente: 0, vencido: 0 });
 
-
-        document.getElementById('statPaid').textContent    = paid;
-        document.getElementById('statPending').textContent = pending;
-        document.getElementById('statOverdue').textContent = overdue;
+        document.getElementById('statPaid').textContent     = counts.cobrado;
+        document.getElementById('statImminent').textContent = counts.inminente;
+        document.getElementById('statPending').textContent  = counts.pendiente;
+        document.getElementById('statOverdue').textContent  = counts.vencido;
     }
 
     // Update status select dropdown colour class on change
     function updateStatusSelectStyle(select) {
-        select.classList.remove('paid', 'overdue', 'pending');
+        select.classList.remove('cobrado', 'paid', 'vencido', 'overdue', 'pendiente', 'pending', 'inminente');
         const val = select.value.toLowerCase();
-        if (val === 'paid') select.classList.add('paid');
-        else if (val === 'overdue') select.classList.add('overdue');
-        else select.classList.add('pending');
+        if (val.includes('cobrado') || val === 'paid') select.classList.add('cobrado');
+        else if (val.includes('vencido') || val === 'overdue') select.classList.add('vencido');
+        else if (val.includes('inminente')) select.classList.add('inminente');
+        else select.classList.add('pendiente');
     }
 
     // Save changed status and/or estimated payment dates
@@ -2065,19 +2087,27 @@
                 html += `<td${cellStyle}><input class="${inputClass}" data-row="${index}" data-key="${key}" data-original="${val.replace(/"/g, '&quot;')}" value="${val.replace(/"/g, '&quot;')}" onchange="checkMarginUnsavedChanges()"></td>`;
             });
             
-            const sheetStatus = record._status || '';
+            const sheetStatus = (record._status || '').trim();
+            const statusLower = sheetStatus.toLowerCase();
             let statusClass = '';
-            if (/paid/i.test(sheetStatus)) statusClass = 'paid';
-            else if (/overdue/i.test(sheetStatus)) statusClass = 'overdue';
-            else statusClass = 'pending';
+
+            if (statusLower.includes('cobrado') || statusLower.includes('paid') || statusLower.includes('pagada')) {
+                statusClass = 'cobrado';
+            } else if (statusLower.includes('inminente')) {
+                statusClass = 'inminente';
+            } else if (statusLower.includes('vencido') || statusLower.includes('vencida') || statusLower.includes('overdue')) {
+                statusClass = 'vencido';
+            } else {
+                statusClass = 'pendiente';
+            }
 
             html += `
                 <td>
                     <select class="status-select margin-status-select ${statusClass}" data-row="${index}" data-original="${sheetStatus}" onchange="updateStatusSelectStyle(this); checkMarginUnsavedChanges()">
-                        <option value="Pending" ${sheetStatus === 'Pending' || sheetStatus === '' ? 'selected' : ''}>Pendiente</option>
-                        <option value="Paid" ${/paid/i.test(sheetStatus) && !/overdue/i.test(sheetStatus) ? 'selected' : ''}>Pagada</option>
-                        <option value="Overdue" ${/overdue/i.test(sheetStatus) ? 'selected' : ''}>Vencida</option>
-                        <option value="Cancelled" ${/cancelled/i.test(sheetStatus) ? 'selected' : ''}>Cancelada</option>
+                        <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                        <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
+                        <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
+                        <option value="Vencido" ${statusClass === 'vencido' ? 'selected' : ''}>Vencido</option>
                     </select>
                 </td>
             `;
