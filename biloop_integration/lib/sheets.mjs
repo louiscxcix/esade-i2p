@@ -80,11 +80,11 @@ export async function fetchInvoiceData() {
     });
 
     if (row['ID Factura'] && String(row['ID Factura']).trim() !== '') {
-      // Mapping: L=11, T=19, U=20, V=21
-      const invoiceDate = rowCells[11] ? String(rowCells[11]).trim() : '';
-      const status = rowCells[19] ? String(rowCells[19]).trim() : '';
-      const estPayDate = rowCells[20] ? String(rowCells[20]).trim() : '';
-      const payDate = rowCells[21] ? String(rowCells[21]).trim() : '';
+      // Robust header-based mapping
+      const invoiceDate = (row['Fecha Factura'] || '').trim();
+      const status      = (row['Estado'] || row['Status'] || '').trim();
+      const estPayDate  = (row['Fecha Est. Pago'] || row['Fecha Estimada de Pago'] || '').trim();
+      const payDate     = (row['Fecha Cobro'] || row['Fecha de Cobro'] || '').trim();
 
       validRows.push({
         // Original keys (for UI)

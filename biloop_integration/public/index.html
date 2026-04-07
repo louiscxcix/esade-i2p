@@ -1646,48 +1646,48 @@
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         
-        data.forEach((invoice, index) => {
-            const originalDateStr = invoice['Fecha Factura'] || '';
-            let dateVal = originalDateStr;
-            let formattedDate = "";
-            
-            if (dateVal && dateVal.includes('/')) {
-                const parts = dateVal.split('/');
+        // Helper to convert DD/MM/YYYY or other formats to YYYY-MM-DD for <input type="date">
+        const toISODate = (val) => {
+            if (!val) return "";
+            val = String(val).trim();
+            // Handle DD/MM/YYYY
+            if (val.includes('/')) {
+                const parts = val.split('/');
                 if (parts.length === 3) {
-                    formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    const day   = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year  = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                    return `${year}-${month}-${day}`;
                 }
-            } else {
-                formattedDate = dateVal;
             }
+            // Handle DD-MM-YYYY
+            if (val.includes('-') && val.split('-')[0].length <= 2) {
+                const parts = val.split('-');
+                if (parts.length === 3) {
+                    const day   = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year  = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            // Already YYYY-MM-DD or other
+            return val;
+        };
 
-            const sheetStatus = invoice['Status'] || '';
+        data.forEach((invoice, index) => {
+            const formattedDate = toISODate(invoice['Fecha Factura']);
+            const estPayFormatted = toISODate(invoice['Estimated Payment Date']);
+            const payFormatted = toISODate(invoice['Payment Date']);
+
+            const sheetStatus = (invoice['Status'] || '').trim();
             let statusClass = '';
-            if (/paid/i.test(sheetStatus)) {
+            const statusLower = sheetStatus.toLowerCase();
+            if (statusLower.includes('paid') || statusLower.includes('pagada')) {
                 statusClass = 'paid';
-            } else if (/overdue/i.test(sheetStatus)) {
+            } else if (statusLower.includes('overdue') || statusLower.includes('vencida')) {
                 statusClass = 'overdue';
             } else {
                 statusClass = 'pending';
-            }
-
-            // Estimated Payment Date (col T)
-            const estPayRaw = invoice['Estimated Payment Date'] || '';
-            let estPayFormatted = '';
-            if (estPayRaw && estPayRaw.includes('/')) {
-                const ep = estPayRaw.split('/');
-                if (ep.length === 3) estPayFormatted = `${ep[2]}-${ep[1]}-${ep[0]}`;
-            } else {
-                estPayFormatted = estPayRaw;
-            }
-
-            // Actual Payment Date (col U)
-            const payRaw = invoice['Payment Date'] || '';
-            let payFormatted = '';
-            if (payRaw && payRaw.includes('/')) {
-                const pp = payRaw.split('/');
-                if (pp.length === 3) payFormatted = `${pp[2]}-${pp[1]}-${pp[0]}`;
-            } else {
-                payFormatted = payRaw;
             }
 
             // Build the Invoice display ID like 20260301-01 based on date and index
