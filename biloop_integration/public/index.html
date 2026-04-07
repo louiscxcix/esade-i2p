@@ -1959,7 +1959,7 @@
                 statusBadge.innerText = 'Error ✗';
                 btn.disabled = false;
                 btn.innerText = 'Reintentar';
-                return null;
+                return result || { success: false, message: 'No response from server' };
             }
         } catch (error) {
             statusBadge.className = 'status-badge error';
@@ -1999,7 +1999,8 @@
                     showToast("Factura enviada, pero no tiene PDF disponible.", "warning");
                 }
             } else {
-                showToast("Fallo al guardar la factura en Biloop.", "error");
+                const errorMsg = result?.message || "Fallo al guardar la factura en Biloop.";
+                showToast(errorMsg, "error");
             }
         } catch (e) {
             console.error(e);

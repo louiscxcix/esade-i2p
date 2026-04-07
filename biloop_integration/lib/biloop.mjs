@@ -32,14 +32,26 @@ export async function getAuthToken() {
 function formatBiloopDate(d) {
   if (!d) return '2026-01-01'; // Default fallback
   const parts = d.split('/');
-  if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  if (parts.length === 3) {
+      // Logic to detect DD/MM or MM/DD
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      const year = parts[2];
+      
+      // If it's MM/DD/YYYY (US) and today is April 8th (04/08/2026)
+      // If month > 12, it's definitely DD/MM
+      // Otherwise, the spreadsheet pattern usually determines it.
+      // Given previous data 15/03/2025, it's DD/MM/YYYY.
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
   return d;
 }
 
 /** Fetch client NIF dynamically from Biloop */
 async function getClientNif(clientName, token) {
   if (!clientName) return null;
-  const nameQuery = clientName.toLowerCase().trim();
+  const nameQuery = clientName.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const queryWords = nameQuery.split(/\s+/).filter(w => w.length > 1);
   
   try {
     const res = await fetch(`${BILOOP_BASE_URL}/billing/getERPCustomers?Company_id=E67652`, {
@@ -50,12 +62,32 @@ async function getClientNif(clientName, token) {
     const data = await res.json();
     if (!data.data) return null;
     
-    // Find precise match or substring match
-    const matchingClient = data.data.find(c => {
+    // 1. Precise/Substring match
+    let matchingClient = data.data.find(c => {
       const dbName = (c.name || '').toLowerCase();
       const dbTrade = (c.trade_name || '').toLowerCase();
       return dbName.includes(nameQuery) || dbTrade.includes(nameQuery) || nameQuery.includes(dbName);
     });
+
+    // 2. Word overlap match (if no direct match)
+    if (!matchingClient && queryWords.length > 0) {
+        matchingClient = data.data.find(c => {
+            const dbName = (c.name || '').toLowerCase();
+            const dbWords = dbName.split(/[^a-z0-9]/).filter(w => w.length > 1);
+            // Check if ALL query words (significant) are present in DB name
+            return queryWords.every(qw => dbWords.includes(qw));
+        });
+    }
+
+    // 3. Relaxed word overlap (at least 2 words or 50% match)
+    if (!matchingClient && queryWords.length >= 2) {
+        matchingClient = data.data.find(c => {
+            const dbName = (c.name || '').toLowerCase();
+            const dbWords = dbName.split(/[^a-z0-9]/).filter(w => w.length > 1);
+            const matches = queryWords.filter(qw => dbWords.includes(qw)).length;
+            return matches >= 2;
+        });
+    }
     
     return matchingClient ? matchingClient.nif : null;
   } catch (e) {
