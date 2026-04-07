@@ -1411,6 +1411,8 @@
                             <th>Ref.</th>
                             <th>Importe Bruto <span class="date-hint">Editable</span></th>
                             <th>IVA</th>
+                            <th>Estado <span class="date-hint">Editable</span></th>
+                            <th>Fecha Pago <span class="date-hint">Editable</span></th>
                             <th style="width: 60px;"></th>
                         </tr>
                     </thead>
@@ -1846,7 +1848,7 @@
         if (document.getElementById('saveFieldsBtn').classList.contains('btn-inactive')) return;
         const statusSelects = document.querySelectorAll('.status-select');
         const estDateInputs = document.querySelectorAll('.est-date-input');
-        const dateInputs = document.querySelectorAll('.date-input');
+        const dateInputs = document.querySelectorAll('.date-input, .pay-date-input');
         
         // Build a map: row_index -> { status?, est_payment_date?, invoice_date? }
         const rowMap = {};
@@ -2077,7 +2079,7 @@
 
     const MARGIN_KEYS = [
         'Recruiter Name', 'Margin', 'Recruiter Commission', 'Collected by BT',
-        'Invoice', 'VAT', 'Gross Invoice Amount (Recruiter)'
+        'Invoice', 'Gross Invoice Amount (Recruiter)', 'VAT'
     ];
 
     // Columns to highlight as key calculation metrics
