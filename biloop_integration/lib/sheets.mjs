@@ -92,6 +92,14 @@ export async function fetchInvoiceData() {
     const feeIdx    = findIdx(['fee', '%']);
     const amtIdx    = findIdx(['importe', 'factura']);
     const salIdx    = findIdx(['salario', 'fijo']);
+    const ivaIdx    = findIdx(['iva']);
+    const brutoIdx  = findIdx(['factura', 'bruto']) !== -1 ? findIdx(['factura', 'bruto']) : findIdx(['importe', 'total']);
+    const varSalIdx = findIdx(['salario', 'variable']);
+    const equityIdx = findIdx(['participación', '%']) !== -1 ? findIdx(['participación', '%']) : findIdx(['equity']);
+    const startIdx  = findIdx(['fecha', 'inicio']);
+    const dueIdx    = findIdx(['vencimiento']);
+    const recruiterIdx = findIdx(['recruiter']);
+    const discountIdx = findIdx(['descuento', '%']);
 
     dataRows.forEach((rowCells, i) => {
         const idVal = rowCells[idIdx] || '';
@@ -113,6 +121,8 @@ export async function fetchInvoiceData() {
                 Fee: cleanPercentage(rowCells[feeIdx] || 0),
                 Salario: cleanCurrency(rowCells[salIdx] || 0),
                 'Importe factura': cleanCurrency(rowCells[amtIdx] || 0),
+                IVA: cleanCurrency(rowCells[ivaIdx] || 0),
+                'Importe Cobro': cleanCurrency(rowCells[brutoIdx] || 0), 
                 Status: status,
                 'Estimated Payment Date': estPayDate,
                 'Payment Date': payDate,
@@ -120,8 +130,14 @@ export async function fetchInvoiceData() {
                 // Biloop-optimized keys
                 'ID Factura Dinámica': String(idVal).trim(),
                 'Candidate Name': (rowCells[candIdx] || '').trim(),
-                'Due Date': estPayDate,
+                'Due Date': (rowCells[dueIdx] || '').trim() || estPayDate,
                 'Fee %': cleanPercentage(rowCells[feeIdx] || 0),
+                'Start Date': (rowCells[startIdx] || '').trim(),
+                'Fix Salary': (rowCells[salIdx] || '').trim(),
+                'Variable Salary': (rowCells[varSalIdx] || '').trim(),
+                'Equity %': (rowCells[equityIdx] || '').trim(),
+                'Recruiter Name': (rowCells[recruiterIdx] || '').trim(),
+                'Discount %': cleanPercentage(rowCells[discountIdx] || 0) * 100, // Biloop expects percentage number, not decimal
                 
                 _sheet_row_index: i + 5, // Row 4 was headers, so first data row is 5
             });
