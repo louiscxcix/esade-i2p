@@ -1363,11 +1363,22 @@
                     <div class="page-title">Márgenes de Reclutadores</div>
                     <div class="page-desc">Seguimiento y actualización de tarifas y comisiones</div>
                 </div>
+                <div class="header-actions">
+                    <button class="btn-secondary btn-inactive" onclick="saveAllMargins()" id="saveAllMarginsBtn" data-tooltip="No hay cambios sin guardar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar Cambios
+                    </button>
+                </div>
             </header>
 
             <div class="tip-banner">
                 <span class="tip-icon"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
                 <span>Haz clic en cualquier campo para editarlo y pulsa <strong style="color:var(--text-primary);">Guardar</strong> para actualizar.</span>
+            </div>
+
+            <div class="unsaved-banner" id="unsavedMarginBanner">
+                <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Tienes cambios sin guardar — haz clic en <strong style="color:var(--text-primary);">Guardar Cambios</strong> para aplicarlos</span>
             </div>
 
             <div class="table-toolbar">
@@ -2176,13 +2187,23 @@
         });
         
         const saveBtn = document.getElementById('saveAllMarginsBtn');
+        const banner = document.getElementById('unsavedMarginBanner');
         if (saveBtn) {
-            if (hasUnsaved) saveBtn.classList.add('pulse-red');
-            else saveBtn.classList.remove('pulse-red');
+            if (hasUnsaved) {
+                saveBtn.classList.remove('btn-inactive');
+                saveBtn.classList.add('pulse-red');
+                saveBtn.removeAttribute('data-tooltip');
+            } else {
+                saveBtn.classList.add('btn-inactive');
+                saveBtn.classList.remove('pulse-red');
+                saveBtn.setAttribute('data-tooltip', 'No hay cambios sin guardar');
+            }
         }
+        if (banner) banner.classList.toggle('visible', hasUnsaved);
     }
 
     async function saveAllMargins() {
+        if (document.getElementById('saveAllMarginsBtn').classList.contains('btn-inactive')) return;
         const checkboxes = document.querySelectorAll('.margin-row-checkbox:checked');
         const rowsToSave = new Set();
         
@@ -2197,7 +2218,6 @@
 
         const btn = document.getElementById('saveAllMarginsBtn');
         btn.disabled = true;
-        const oT = btn.innerHTML;
         btn.innerHTML = '⏳ Guardando...';
 
         const payload = [];
@@ -2260,7 +2280,7 @@
             showToast('Error de conexión con el servidor', 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = oT;
+            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Cambios';
         }
     }
 
