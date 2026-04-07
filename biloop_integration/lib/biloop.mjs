@@ -118,13 +118,11 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   const payload = {
     company_id: "E67652",
-    customer_id: "0", // Map to Generic Client to allow name/NIF overrides
     master_name: clientName,
-    master_razon_social: clientName,
-    ERP_customer_name: clientName,
-    address: "", // Clear template address (Parque Tecnologico)
+    address: "", // Keep clean for PDF
     date: dateStr,
     operation_date: dateStr,
+    issuance_date: dateStr, // From successful test log
     due_date: dueDateStr || dateStr,
     expiration_date: dueDateStr || dateStr, // Include both common Biloop schema expiration keys
     SERIE: invoiceJson.SERIE || "F",
