@@ -403,8 +403,9 @@
             background: var(--bg-surface);
             border-radius: var(--r-lg);
             border: 1px solid var(--border);
-            overflow: hidden;
-            overflow-x: auto;
+            overflow: auto;
+            max-height: calc(100vh - 320px);
+            position: relative;
         }
 
         .table-toolbar {
@@ -436,7 +437,7 @@
 
         th {
             background: var(--bg-elevated);
-            padding: 8px 14px;
+            padding: 10px 14px;
             font-size: 11px;
             font-weight: 550;
             color: var(--text-tertiary);
@@ -444,6 +445,9 @@
             letter-spacing: 0.05em;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         td {
@@ -1185,10 +1189,178 @@
             border-radius: 3px;
         }
     
+        /* ── Password Protection ───────────────────── */
+        #password-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-base);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .pw-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-xl);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .pw-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pw-logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-bright) 0%, var(--accent) 100%);
+            border-radius: var(--r-md);
+            display: grid;
+            place-items: center;
+        }
+
+        .pw-logo svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--bg-base);
+        }
+
+        .pw-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .pw-desc {
+            font-size: 14px;
+            color: var(--text-tertiary);
+        }
+
+        .pw-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .pw-input-group label {
+            font-size: 11px;
+            font-weight: 550;
+            color: var(--text-ghost);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pw-input {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 15px;
+            width: 100%;
+            transition: all var(--speed) var(--ease);
+            text-align: center;
+            letter-spacing: 0.1em;
+        }
+
+        .pw-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        .pw-error {
+            font-size: 12px;
+            color: var(--red);
+            font-weight: 500;
+            margin-top: 4px;
+            display: none;
+            text-align: center;
+        }
+
+        .pw-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 14px;
+            font-size: 14px;
+        }
+    
     </style>
 </head>
 <body>
     
+<div id="password-overlay">
+    <div class="pw-card">
+        <div class="pw-header">
+            <div class="pw-logo">
+                <svg viewBox="0 0 24 24"><path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z"/></svg>
+            </div>
+            <h1 class="pw-title">Boomerang Hub</h1>
+            <p class="pw-desc">Este portal está protegido. Por favor, introduce la contraseña para continuar.</p>
+        </div>
+        
+        <div class="pw-input-group">
+            <label for="site-pw">Contraseña</label>
+            <input type="password" id="site-pw" class="pw-input" placeholder="••••••••" autocomplete="current-password">
+            <div id="pw-error" class="pw-error">Contraseña incorrecta. Inténtalo de nuevo.</div>
+        </div>
+
+        <button class="btn-primary pw-btn" onclick="verifyPassword()">Acceder</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Essential logic to run before app initialization
+        const auth = localStorage.getItem('boomerang_hub_auth');
+        if (auth === 'verified') {
+            document.getElementById('password-overlay').style.display = 'none';
+        }
+
+        window.verifyPassword = function() {
+            const pwInput = document.getElementById('site-pw');
+            const errorMsg = document.getElementById('pw-error');
+            const overlay = document.getElementById('password-overlay');
+
+            if (pwInput.value === 'BoomerangEsade2') {
+                localStorage.setItem('boomerang_hub_auth', 'verified');
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.4s ease-out';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 400);
+            } else {
+                errorMsg.style.display = 'block';
+                pwInput.style.borderColor = 'var(--red)';
+                pwInput.style.boxShadow = '0 0 0 3px var(--red-bg)';
+                pwInput.value = '';
+                pwInput.focus();
+            }
+        };
+
+        // Allow Enter key
+        document.getElementById('site-pw').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') verifyPassword();
+        });
+    })();
+</script>
+
 
 <!-- ════════════════════════════════════════════
      SIDEBAR
@@ -1401,6 +1573,11 @@
                 <table id="marginTable" style="display: none;">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" id="selectAllMargin" onchange="toggleAllMargin(this)">
+                                </div>
+                            </th>
                             <th>Cliente</th>
                             <th>Candidato</th>
                             <th>Reclutador</th>
@@ -1412,7 +1589,6 @@
                             <th>IVA</th>
                             <th>Estado <span class="date-hint">Editable</span></th>
                             <th>Fecha Pago <span class="date-hint">Editable</span></th>
-                            <th style="width: 60px;"></th>
                         </tr>
                     </thead>
                     <tbody id="marginTableBody"></tbody>

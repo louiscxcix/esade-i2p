@@ -83,8 +83,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   const resolvedNif = await getClientNif(clientName, token) || `B-${clientName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)}`;
 
-  // Core Financials and Identifiers
-  const a3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
+  // Core Financials and Identifiers - Append timestamp to break Biloop's OPTARE caching for the same ID
+  const baseA3Ref = invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || `REQ-${Date.now()}`;
+  const a3Ref = `${baseA3Ref}-${Math.floor(Date.now() / 1000)}`;
   const baseAmt = parseFloat(invoiceJson['Importe factura'] || invoiceJson['Net Invoice Amount'] || invoiceJson['Invoice Amount'] || 0);
   const vatAmt = parseFloat(invoiceJson['IVA'] || invoiceJson['IVA / VAT'] || 0);
   const totalAmt = parseFloat(invoiceJson['Importe Cobro'] || invoiceJson['Gross Invoice Amount'] || 0);
