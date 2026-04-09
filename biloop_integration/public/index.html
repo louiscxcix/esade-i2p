@@ -2253,7 +2253,8 @@
         const tbody = document.getElementById('marginTableBody');
         tbody.innerHTML = '';
 
-        data.forEach((record, index) => {
+        [...data].reverse().forEach((record) => {
+            const index = data.indexOf(record);
             const tr = document.createElement('tr');
             tr.className = 'margin-invoice-row';
             
