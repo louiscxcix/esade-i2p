@@ -44,28 +44,38 @@ function formatBiloopDate(d) {
 
 /**
  * Derive a stable, internal invoice ID used as the a3_reference in Biloop.
- * This is NOT shown on the dashboard — it is computed deterministically from
- * the invoice's sheet ID / client / date so that re-clicking the same row
- * always produces the same reference and Biloop deduplicates it.
  *
- * Format: BLOOP-<base36-hash> (max 20 chars, safe for Biloop a3_reference).
+ * The hash is built from ALL key data fields — not just the static row ID.
+ * This means:
+ *   - Same data → same ID → Biloop deduplicates (no double-posting).
+ *   - Changed data (date, amount, client, etc.) → new ID → Biloop creates a
+ *     fresh invoice, so PDF always reflects the latest saved values.
+ *
+ * Format: BLOOP-<base36-hash> (max ~14 chars, safe for Biloop a3_reference).
  */
 function deriveStableInvoiceId(invoiceJson) {
-  // Prefer the sheet's own dynamic ID, then fall back to client+date compound
-  const base = (
-    invoiceJson['ID Factura Dinámica'] ||
-    invoiceJson['Invoice ID'] ||
-    `${(invoiceJson['Cliente'] || invoiceJson['Client Name'] || 'UNK').replace(/\s+/g, '').toUpperCase().slice(0, 8)}-${(invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date'] || '').replace(/[\/\.\-]/g, '')}`
-  ).trim();
+  // Include every field that defines the "version" of this invoice.
+  // Changing any one of these after a Save will produce a different hash.
+  const rowId    = (invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || '').trim();
+  const client   = (invoiceJson['Cliente'] || invoiceJson['Client Name'] || '').trim().toUpperCase();
+  const date     = (invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date'] || '').trim();
+  const amount   = String(parseFloat(invoiceJson['Importe factura'] || invoiceJson['Invoice Amount'] || 0));
+  const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
 
-  // Simple but stable djb2 hash → base36 so it stays short & URL-safe
+  // Compound key: rowId pins it to the sheet row; the rest capture the saved state.
+  const base = `${rowId}|${client}|${date}|${amount}|${candidate}`;
+
+  // djb2 hash → base36 so it stays short & URL-safe
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
     hash = ((hash << 5) + hash) + base.charCodeAt(i);
     hash = hash & 0x7fffffff; // keep positive 31-bit
   }
-  return `BLOOP-${hash.toString(36).toUpperCase()}`;
+  const id = `BLOOP-${hash.toString(36).toUpperCase()}`;
+  console.log(`[Biloop] Stable a3_reference: ${id}  (base: "${base}")`);
+  return id;
 }
+
 
 /** Fetch client details (NIF + address + canonical name) from Biloop */
 async function getClientInfo(clientName, token) {
@@ -82,16 +92,35 @@ async function getClientInfo(clientName, token) {
     });
     if (!res.ok) return {};
     const data = await res.json();
-    if (!data.data) return {};
+    if (!data.data || data.data.length === 0) return {};
 
-    // Strict match after punctuation normalization (MC Recruiting. === MC Recruiting)
-    const match = data.data.find(c => {
-      const dbName = normalize(c.name);
+    const customers = data.data;
+
+    // 1. Strict exact match (normalized)
+    let match = customers.find(c => {
+      const dbName  = normalize(c.name);
       const dbTrade = normalize(c.trade_name);
       return dbName === nameQuery || dbTrade === nameQuery;
     });
 
-    if (!match) return {};
+    // 2. Partial / contains match (e.g. "MC Recruiting" ↔ "MC Recruiting S.L.")
+    if (!match) {
+      match = customers.find(c => {
+        const dbName  = normalize(c.name);
+        const dbTrade = normalize(c.trade_name);
+        return dbName.includes(nameQuery) || dbTrade.includes(nameQuery)
+            || nameQuery.includes(dbName)  || nameQuery.includes(dbTrade);
+      });
+    }
+
+    if (!match) {
+      // Log available names so we can debug mismatches
+      const available = customers.slice(0, 30).map(c => `"${c.name}" / "${c.trade_name}"`).join(', ');
+      console.warn(`[Biloop] No customer match for "${clientName}" (normalized: "${nameQuery}"). Available: ${available}`);
+      return {};
+    }
+
+    console.log(`[Biloop] Matched customer: "${match.name}" / trade: "${match.trade_name}" / NIF: "${match.nif}"`);
 
     // Build address string from available fields
     const addressParts = [
@@ -103,16 +132,16 @@ async function getClientInfo(clientName, token) {
     ].filter(Boolean);
 
     return {
-      nif:         match.nif || null,
-      // Use trade_name first (often the "display" name), then name
+      nif:           match.nif || null,
       canonicalName: match.trade_name || match.name || clientName,
-      address:     addressParts.length > 0 ? addressParts.join(', ') : null,
+      address:       addressParts.length > 0 ? addressParts.join(', ') : null,
     };
   } catch (e) {
-    console.error('Error fetching client info from Biloop:', e);
+    console.error('[Biloop] Error fetching client info:', e);
     return {};
   }
 }
+
 
 /**
  * Check whether an invoice with this a3_reference already exists in Biloop.
@@ -145,14 +174,14 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // ── 2. Fetch full client info from Biloop (NIF + address + canonical name) ─
   const clientInfo = await getClientInfo(clientName, token);
 
-  const resolvedNif     = clientInfo.nif    || `B-${clientName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)}`;
+  const resolvedNif     = clientInfo.nif    || null;   // null = let Biloop auto-assign / create new customer
   const resolvedAddress = clientInfo.address || null;
-  // Use the Biloop-registered company name for the PDF header
+  // If Biloop has a registered canonical name, use it. Otherwise use the name from the spreadsheet.
   const resolvedName    = clientInfo.canonicalName || clientName;
 
   // ── 3. Build a STABLE internal reference — same invoice = same ref ─────────
   const a3Ref = deriveStableInvoiceId(invoiceJson);
-  console.log(`[Biloop] Stable a3_reference for this invoice: ${a3Ref}`);
+
 
   // ── 4. Check if already exists in Biloop (idempotency) ───────────────────
   const existing = await findExistingInvoice(a3Ref, token);
@@ -197,26 +226,21 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // ── 7. POST to Biloop only if not already present ────────────────────────
   if (!existing) {
     const payload = {
-      company_id:        "E67652",
-      master_name:       resolvedName,      // ← Biloop-registered company name
-      master_nif:        resolvedNif,       // ← pulled from Biloop customer DB
-      date:              dateStr,
-      operation_date:    dateStr,
-      issuance_date:     dateStr,
-      due_date:          dueDateStr || dateStr,
-      expiration_date:   dueDateStr || dateStr,
-      SERIE:             invoiceJson.SERIE || "F",
-      a3_reference:      a3Ref,             // ← stable internal ID
+      company_id:          "E67652",
+      master_name:         resolvedName,
+      date:                dateStr,
+      operation_date:      dateStr,
+      issuance_date:       dateStr,
+      due_date:            dueDateStr || dateStr,
+      expiration_date:     dueDateStr || dateStr,
+      SERIE:               invoiceJson.SERIE || "F",
+      a3_reference:        a3Ref,
       invoice_description: detailedDescription,
-
-      // Financials
-      base:              baseAmt,
-      ordinary_vat_base: baseAmt,
+      base:               baseAmt,
+      ordinary_vat_base:  baseAmt,
       ordinary_vat_total: vatAmt,
-      vat_total:         vatAmt,
-      total:             totalAmt,
-
-      // Lines
+      vat_total:          vatAmt,
+      total:              totalAmt,
       ERP_line: [
         {
           company_id:      "E67652",
@@ -232,10 +256,10 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       ]
     };
 
-    // Include address only if Biloop returned one (avoid overwriting with a placeholder)
-    if (resolvedAddress) {
-      payload.address = resolvedAddress;
-    }
+    // Only set NIF when we actually resolved one from Biloop — never send a fake NIF
+    if (resolvedNif) payload.master_nif = resolvedNif;
+    // Only set address when Biloop returned one
+    if (resolvedAddress) payload.address = resolvedAddress;
 
     console.log("FINAL BILOOP PAYLOAD:", JSON.stringify(payload, null, 2));
 
