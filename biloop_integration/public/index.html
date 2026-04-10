@@ -1301,6 +1301,157 @@
             font-size: 14px;
         }
     
+        /* ── Date-range filter dropdown ──────────────── */
+        .date-filter-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .btn-date-filter {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            gap: 5px;
+            transition: all var(--speed) var(--ease);
+        }
+        .btn-date-filter:hover {
+            background: var(--bg-overlay);
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+        }
+        .btn-date-filter.active {
+            background: var(--accent-bg);
+            color: var(--accent-bright);
+            border-color: var(--accent-border);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+        .btn-date-filter .date-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: var(--accent);
+            color: var(--bg-base);
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: var(--r-pill);
+            letter-spacing: 0.01em;
+        }
+
+        .date-filter-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-lg);
+            padding: 16px;
+            width: 260px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+            z-index: 200;
+            flex-direction: column;
+            gap: 12px;
+            animation: dropIn 0.15s var(--ease);
+        }
+        .date-filter-panel.open { display: flex; }
+
+        @keyframes dropIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .date-filter-panel .dfp-label {
+            font-size: 10px;
+            font-weight: 550;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .date-filter-panel .dfp-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-filter-panel .dfp-field {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .date-filter-panel input[type="date"] {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 8px;
+            border-radius: var(--r-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            transition: all var(--speed) var(--ease);
+            width: 100%;
+            cursor: pointer;
+        }
+        .date-filter-panel input[type="date"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+
+        .date-filter-panel .dfp-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+        }
+        .date-filter-panel .dfp-apply {
+            flex: 1;
+            justify-content: center;
+            background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent) 100%);
+            color: var(--bg-base);
+            font-weight: 600;
+            font-size: 12px;
+            padding: 7px 10px;
+            border-radius: var(--r-sm);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .date-filter-panel .dfp-apply:hover { filter: brightness(1.08); }
+        .date-filter-panel .dfp-clear {
+            background: var(--bg-overlay);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            padding: 7px 10px;
+            border-radius: var(--r-sm);
+        }
+        .date-filter-panel .dfp-clear:hover {
+            background: var(--red-bg);
+            color: var(--red);
+            border-color: var(--red-border);
+        }
+
+        .date-filter-panel .dfp-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .date-filter-panel .dfp-title button {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color var(--speed);
+        }
+        .date-filter-panel .dfp-title button:hover { color: var(--text-primary); }
+
     </style>
 </head>
 <body>
@@ -1483,6 +1634,40 @@
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Nueva Factura
                     </button>
+
+                    <!-- Date range filter -->
+                    <div class="date-filter-wrapper" id="invoiceDateFilterWrapper">
+                        <button class="btn-date-filter" id="invoiceDateFilterBtn" onclick="toggleDateFilterPanel('invoice')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Fecha
+                        </button>
+                        <div class="date-filter-panel" id="invoiceDateFilterPanel">
+                            <div class="dfp-title">
+                                Filtrar por Fecha Factura
+                                <button onclick="toggleDateFilterPanel('invoice')" title="Cerrar">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                            <div class="dfp-row">
+                                <div class="dfp-field">
+                                    <span class="dfp-label">Desde</span>
+                                    <input type="date" id="invoiceDateFrom">
+                                </div>
+                                <div class="dfp-field">
+                                    <span class="dfp-label">Hasta</span>
+                                    <input type="date" id="invoiceDateTo">
+                                </div>
+                            </div>
+                            <div class="dfp-actions">
+                                <button class="dfp-clear" onclick="clearDateFilter('invoice')">Limpiar</button>
+                                <button class="dfp-apply" onclick="applyDateFilter('invoice')">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Aplicar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <button class="btn-ghost" onclick="fetchData()" id="refreshBtn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         Refresh
@@ -1560,6 +1745,40 @@
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Nueva Factura
                     </button>
+
+                    <!-- Date range filter -->
+                    <div class="date-filter-wrapper" id="marginDateFilterWrapper">
+                        <button class="btn-date-filter" id="marginDateFilterBtn" onclick="toggleDateFilterPanel('margin')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Fecha
+                        </button>
+                        <div class="date-filter-panel" id="marginDateFilterPanel">
+                            <div class="dfp-title">
+                                Filtrar por Fecha Factura
+                                <button onclick="toggleDateFilterPanel('margin')" title="Cerrar">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                            <div class="dfp-row">
+                                <div class="dfp-field">
+                                    <span class="dfp-label">Desde</span>
+                                    <input type="date" id="marginDateFrom">
+                                </div>
+                                <div class="dfp-field">
+                                    <span class="dfp-label">Hasta</span>
+                                    <input type="date" id="marginDateTo">
+                                </div>
+                            </div>
+                            <div class="dfp-actions">
+                                <button class="dfp-clear" onclick="clearDateFilter('margin')">Limpiar</button>
+                                <button class="dfp-apply" onclick="applyDateFilter('margin')">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Aplicar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <button class="btn-ghost" onclick="fetchMarginData()" id="refreshMarginBtn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         Refresh
@@ -1752,6 +1971,9 @@
     let globalData = [];
     let marginData = [];
     let currentFilter = 'all';
+    // Active date-range filters (YYYY-MM-DD strings or '')
+    let invoiceDateFilter = { from: '', to: '' };
+    let marginDateFilter  = { from: '', to: '' };
 
     function toggleFilter(filter) {
         if (currentFilter === filter) {
@@ -1760,14 +1982,8 @@
             currentFilter = filter;
         }
 
-        const rows = document.querySelectorAll('.invoice-row');
-        rows.forEach(row => {
-            if (currentFilter === 'all') {
-                row.style.display = '';
-            } else {
-                row.style.display = row.classList.contains(currentFilter) ? '' : 'none';
-            }
-        });
+        // Re-apply date filter on top of status filter
+        applyInvoiceDateVis();
 
         const cards = document.querySelectorAll('#statsBar .stat-card');
         cards.forEach(card => {
@@ -1787,6 +2003,107 @@
                     card.style.borderColor = 'var(--border-color)';
                 }
             }
+        });
+    }
+
+    // ===== Date Range Filter =====
+
+    function toggleDateFilterPanel(table) {
+        const panelId = table === 'invoice' ? 'invoiceDateFilterPanel' : 'marginDateFilterPanel';
+        const panel = document.getElementById(panelId);
+        // Close the other panel first
+        const otherId = table === 'invoice' ? 'marginDateFilterPanel' : 'invoiceDateFilterPanel';
+        document.getElementById(otherId)?.classList.remove('open');
+        panel.classList.toggle('open');
+    }
+
+    // Close panels when clicking outside
+    document.addEventListener('click', function(e) {
+        ['invoiceDateFilterWrapper', 'marginDateFilterWrapper'].forEach(id => {
+            const wrapper = document.getElementById(id);
+            if (wrapper && !wrapper.contains(e.target)) {
+                wrapper.querySelector('.date-filter-panel')?.classList.remove('open');
+            }
+        });
+    });
+
+    function applyDateFilter(table) {
+        if (table === 'invoice') {
+            invoiceDateFilter.from = document.getElementById('invoiceDateFrom').value;
+            invoiceDateFilter.to   = document.getElementById('invoiceDateTo').value;
+            applyInvoiceDateVis();
+            updateDateFilterBtn('invoice');
+            document.getElementById('invoiceDateFilterPanel').classList.remove('open');
+        } else {
+            marginDateFilter.from = document.getElementById('marginDateFrom').value;
+            marginDateFilter.to   = document.getElementById('marginDateTo').value;
+            applyMarginDateVis();
+            updateDateFilterBtn('margin');
+            document.getElementById('marginDateFilterPanel').classList.remove('open');
+        }
+    }
+
+    function clearDateFilter(table) {
+        if (table === 'invoice') {
+            invoiceDateFilter = { from: '', to: '' };
+            document.getElementById('invoiceDateFrom').value = '';
+            document.getElementById('invoiceDateTo').value = '';
+            applyInvoiceDateVis();
+            updateDateFilterBtn('invoice');
+        } else {
+            marginDateFilter = { from: '', to: '' };
+            document.getElementById('marginDateFrom').value = '';
+            document.getElementById('marginDateTo').value = '';
+            applyMarginDateVis();
+            updateDateFilterBtn('margin');
+        }
+    }
+
+    function updateDateFilterBtn(table) {
+        const btn = document.getElementById(table === 'invoice' ? 'invoiceDateFilterBtn' : 'marginDateFilterBtn');
+        const filter = table === 'invoice' ? invoiceDateFilter : marginDateFilter;
+        const isActive = filter.from || filter.to;
+        btn.classList.toggle('active', !!isActive);
+        // Update button label to show chip when active
+        if (isActive) {
+            const parts = [];
+            if (filter.from) parts.push(filter.from.slice(5));  // MM-DD
+            if (filter.to)   parts.push(filter.to.slice(5));
+            btn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Fecha
+                <span class="date-filter-chip">${parts.join(' – ')} <span onclick="event.stopPropagation();clearDateFilter('${table}')" title="Limpiar" style="cursor:pointer;opacity:0.8;">×</span></span>
+            `;
+        } else {
+            btn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Fecha
+            `;
+        }
+    }
+
+    function dateInRange(isoDate, from, to) {
+        if (!isoDate) return (!from && !to); // no date: only show if no filter set
+        if (from && isoDate < from) return false;
+        if (to   && isoDate > to)   return false;
+        return true;
+    }
+
+    function applyInvoiceDateVis() {
+        const { from, to } = invoiceDateFilter;
+        document.querySelectorAll('.invoice-row').forEach(row => {
+            const rowDate   = row.dataset.fecha || '';
+            const statusOk  = (currentFilter === 'all' || row.classList.contains(currentFilter));
+            const dateOk    = dateInRange(rowDate, from, to);
+            row.style.display = (statusOk && dateOk) ? '' : 'none';
+        });
+    }
+
+    function applyMarginDateVis() {
+        const { from, to } = marginDateFilter;
+        document.querySelectorAll('.margin-invoice-row').forEach(row => {
+            const rowDate = row.dataset.fecha || '';
+            row.style.display = dateInRange(rowDate, from, to) ? '' : 'none';
         });
     }
 
@@ -1917,6 +2234,7 @@
 
             const tr = document.createElement('tr');
             tr.className = `invoice-row ${statusClass}`;
+            tr.dataset.fecha = formattedDate || '';
             tr.style.display = (currentFilter === 'all' || currentFilter === statusClass) ? '' : 'none';
             tr.innerHTML = `
                 <td>
@@ -2257,6 +2575,9 @@
             const index = data.indexOf(record);
             const tr = document.createElement('tr');
             tr.className = 'margin-invoice-row';
+            // Store Fecha Factura from the invoice record for date filtering
+            const marginFechaRaw = record['Fecha Factura'] || record['_invoice_date'] || '';
+            tr.dataset.fecha = toISODate(marginFechaRaw) || '';
             
             let html = `
                 <td>
