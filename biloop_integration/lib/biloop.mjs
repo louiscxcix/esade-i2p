@@ -183,28 +183,32 @@ async function getClientInfo(clientName, token) {
 }
 
 /**
- * Extract the most likely document_id from any Biloop response shape.
- * Biloop wraps responses differently depending on the endpoint.
+ * Extract all useful IDs from any Biloop response envelope.
+ * Returns { id, document_id } — both may be present.
  */
-function extractDocumentId(data) {
-  if (!data) return null;
-  // Direct fields
-  if (data.document_id) return data.document_id;
-  if (data.id) return data.id;
-  // Wrapped array: { data: [...] } or { PostIncomesInvoices: [...] } etc.
-  const inner = data.data || data.PostIncomesInvoices || data.IncomeInvoices || [];
-  if (Array.isArray(inner) && inner.length > 0) {
-    return inner[0].document_id || inner[0].id || null;
-  }
-  // If data itself is an array
-  if (Array.isArray(data) && data.length > 0) {
-    return data[0].document_id || data[0].id || null;
-  }
-  return null;
+function extractIds(data) {
+  if (!data) return {};
+
+  // Unwrap common envelope shapes
+  let item = data;
+  if (item.PostIncomesInvoices && Array.isArray(item.PostIncomesInvoices))
+    item = item.PostIncomesInvoices[0] || {};
+  else if (item.data && Array.isArray(item.data))
+    item = item.data[0] || {};
+  else if (item.IncomeInvoices && Array.isArray(item.IncomeInvoices))
+    item = item.IncomeInvoices[0] || {};
+  else if (Array.isArray(item))
+    item = item[0] || {};
+
+  return {
+    id:          item.id          || null,   // internal DB primary key
+    document_id: item.document_id || null,   // invoice number / Número de documento
+  };
 }
 
 /**
  * Check whether an invoice with this a3_reference already exists in Biloop.
+ * Returns the raw invoice record object, or null.
  */
 async function findExistingInvoice(a3Ref, token) {
   try {
@@ -214,9 +218,9 @@ async function findExistingInvoice(a3Ref, token) {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    const items = data.data || data.IncomeInvoices || [];
-    if (Array.isArray(items) && items.length > 0) return items[0];
-    if (Array.isArray(data) && data.length > 0) return data[0];
+    console.log('[Biloop] findExistingInvoice raw:', JSON.stringify(data).slice(0, 400));
+    const items = data.data || data.IncomeInvoices || (Array.isArray(data) ? data : []);
+    if (items.length > 0) return items[0];
   } catch (e) {
     console.error('[Biloop] Error checking existing invoice:', e.message);
   }
@@ -224,51 +228,73 @@ async function findExistingInvoice(a3Ref, token) {
 }
 
 /**
- * Fetch the PDF for a given document_id, retrying up to maxRetries times
- * with a delay between attempts (Biloop may need time to generate the PDF).
+ * Try to download the PDF binary for an invoice using multiple strategies.
+ * Biloop has at least two endpoints that can return a PDF:
+ *  1. GET /documents/getDocument?document_id=<id>          (general portal doc download)
+ *  2. GET /erp/pendingDocuments/pendingBinary/getPendingBinary?document_id=<id>&document_type=FV
+ *
+ * The "id" from the IncomeInvoice record is the internal DB primary key.
+ * The "document_id" is the invoice number (e.g. 66).
+ * We don't know which one each endpoint expects without trying, so we try all combos.
  */
-async function fetchPdfWithRetry(docId, token, maxRetries = 5, delayMs = 3000) {
+async function fetchPdfAllStrategies(ids, token) {
   const headers = { token, SUBSCRIPTION_KEY };
+  const candidates = [];
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`[Biloop] PDF fetch attempt ${attempt}/${maxRetries} for document_id=${docId}`);
+  // Collect unique non-null IDs to try
+  const idValues = [...new Set([ids.id, ids.document_id].filter(Boolean))];
+  console.log('[Biloop] PDF fetch — candidate IDs:', idValues);
 
-    const pdfParams = new URLSearchParams({
-      document_id:   String(docId),
-      document_type: 'FV',
-      company_id:    COMPANY_ID,
-    });
+  for (const idVal of idValues) {
+    // Strategy A: documents/getDocument (general purpose, no document_type needed)
+    candidates.push({ label: `documents/getDocument(${idVal})`,
+      url: `${BILOOP_BASE_URL}/documents/getDocument?document_id=${encodeURIComponent(idVal)}` });
+    // Strategy B: pendingBinary with type FV
+    candidates.push({ label: `pendingBinary/FV(${idVal})`,
+      url: `${BILOOP_BASE_URL}/erp/pendingDocuments/pendingBinary/getPendingBinary?document_id=${encodeURIComponent(idVal)}&document_type=FV&company_id=${COMPANY_ID}` });
+  }
 
-    const pdfRes = await fetch(
-      `${BILOOP_BASE_URL}/erp/pendingDocuments/pendingBinary/getPendingBinary?${pdfParams}`,
-      { method: 'GET', headers }
-    );
+  // Wait a bit for Biloop to finalize the invoice before first try
+  await new Promise(r => setTimeout(r, 2000));
 
-    console.log(`[Biloop] PDF response: status=${pdfRes.status} content-type=${pdfRes.headers.get('content-type')}`);
+  // Try each strategy up to 3 times with delays
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    for (const { label, url } of candidates) {
+      console.log(`[Biloop] PDF attempt ${attempt} — ${label}`);
+      try {
+        const res = await fetch(url, { method: 'GET', headers });
+        const ct = res.headers.get('content-type') || '';
+        console.log(`[Biloop]   → status=${res.status} content-type="${ct}"`);
 
-    if (pdfRes.ok) {
-      const contentType = pdfRes.headers.get('content-type') || '';
-      if (contentType.includes('pdf') || contentType.includes('octet-stream') || contentType.includes('binary')) {
-        const arrayBuffer = await pdfRes.arrayBuffer();
-        if (arrayBuffer.byteLength > 100) {
-          console.log(`[Biloop] Got PDF: ${arrayBuffer.byteLength} bytes`);
-          return Buffer.from(arrayBuffer).toString('base64');
+        if (res.ok) {
+          // Accept pdf, octet-stream, binary, or unknown types — read bytes and check PDF magic
+          const buf = await res.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          // PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
+          const isPdf = bytes.length > 100 &&
+            bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+          if (isPdf) {
+            console.log(`[Biloop] ✓ Got valid PDF from ${label}: ${bytes.length} bytes`);
+            return Buffer.from(buf).toString('base64');
+          }
+          // Try to read as text to understand what it returned
+          const text = new TextDecoder().decode(buf.slice(0, 300));
+          console.warn(`[Biloop]   → Not a PDF. First 300 chars: ${text}`);
+        } else {
+          const text = await res.text().catch(() => '(unreadable)');
+          console.warn(`[Biloop]   → HTTP ${res.status}: ${text.slice(0, 200)}`);
         }
-        console.warn(`[Biloop] PDF response too small (${arrayBuffer.byteLength} bytes), retrying...`);
-      } else {
-        // Maybe returned JSON error
-        const text = await pdfRes.text();
-        console.warn(`[Biloop] PDF endpoint returned non-PDF content: ${text.slice(0, 200)}`);
+      } catch (e) {
+        console.warn(`[Biloop]   → Exception: ${e.message}`);
       }
-    } else {
-      const errText = await pdfRes.text().catch(() => '');
-      console.warn(`[Biloop] PDF fetch failed (${pdfRes.status}): ${errText.slice(0, 200)}`);
     }
 
-    if (attempt < maxRetries) {
-      await new Promise(r => setTimeout(r, delayMs));
+    if (attempt < 3) {
+      console.log(`[Biloop] PDF retry after 4s delay...`);
+      await new Promise(r => setTimeout(r, 4000));
     }
   }
+
   return null;
 }
 
@@ -294,11 +320,12 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   // ── 4. Check idempotency ───────────────────────────────────────────────────
   const existing = await findExistingInvoice(a3Ref, token);
-  let docId = null;
+  let ids = {};  // will hold { id, document_id }
 
   if (existing) {
-    docId = existing.document_id || existing.id || null;
-    console.log(`[Biloop] Invoice ${a3Ref} already exists — document_id=${docId}, skipping POST.`);
+    const existingIds = extractIds(existing);
+    console.log(`[Biloop] Invoice ${a3Ref} already exists — ids:`, existingIds);
+    ids = existingIds;
   }
 
   // ── 5. Core financials ─────────────────────────────────────────────────────
@@ -378,9 +405,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       return { success: false, message: result.message || `Biloop rejected the invoice (HTTP ${postRes.status}).` };
     }
 
-    // Try to extract document_id from the POST response directly
-    docId = extractDocumentId(result);
-    console.log(`[Biloop] document_id from POST response: ${docId}`);
+    // Extract both id types from the POST response
+    ids = extractIds(result);
+    console.log(`[Biloop] ids from POST response:`, ids);
   }
 
   // Early return if PDF not needed
@@ -393,9 +420,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     };
   }
 
-  // ── 8. Find document_id if we still don't have it ─────────────────────────
-  if (!docId) {
-    console.log('[Biloop] No document_id yet — waiting 4s then querying by a3_reference…');
+  // ── 8. Fetch all IDs if we still don't have them ──────────────────────────
+  if (!ids.id && !ids.document_id) {
+    console.log('[Biloop] No IDs yet — waiting 4s then querying by a3_reference…');
     await new Promise(r => setTimeout(r, 4000));
 
     const getRes = await fetch(
@@ -404,25 +431,25 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     );
     if (getRes.ok) {
       const getData = await getRes.json();
-      console.log('[Biloop] GET invoice result:', JSON.stringify(getData, null, 2).slice(0, 500));
+      console.log('[Biloop] GET invoice result:', JSON.stringify(getData).slice(0, 600));
       const items = getData.data || getData.IncomeInvoices || (Array.isArray(getData) ? getData : []);
       if (items.length > 0) {
-        docId = items[0].document_id || items[0].id || null;
-        console.log(`[Biloop] document_id from GET: ${docId}`);
+        ids = extractIds(items[0]);
+        console.log('[Biloop] ids from GET:', ids);
       }
     }
   }
 
-  if (!docId) {
+  if (!ids.id && !ids.document_id) {
     return {
       success: true,
       pdfBase64: null,
-      message: 'Invoice uploaded but could not retrieve document ID for PDF. Check Biloop dashboard.',
+      message: 'Invoice uploaded but could not retrieve any document ID for PDF. Check Biloop dashboard.',
     };
   }
 
-  // ── 9. Fetch PDF ───────────────────────────────────────────────────────────
-  const pdfBase64 = await fetchPdfWithRetry(docId, token, 5, 3000);
+  // ── 9. Fetch PDF using all available strategies ────────────────────────────
+  const pdfBase64 = await fetchPdfAllStrategies(ids, token);
 
   if (!pdfBase64) {
     return {
