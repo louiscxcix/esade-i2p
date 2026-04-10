@@ -194,16 +194,23 @@ function extractInternalId(data) {
   let item = data;
   if (item.PostIncomesInvoices && Array.isArray(item.PostIncomesInvoices) && item.PostIncomesInvoices.length > 0)
     item = item.PostIncomesInvoices[0];
-  else if (item.data && Array.isArray(item.data) && item.data.length > 0)
-    item = item.data[0];
+  else if (item.data) {
+    const rawData = item.data;
+    if (Array.isArray(rawData) && rawData.length > 0) item = rawData[0];
+    else if (rawData.PostIncomesInvoices && Array.isArray(rawData.PostIncomesInvoices) && rawData.PostIncomesInvoices.length > 0)
+      item = rawData.PostIncomesInvoices[0];
+    else if (rawData.IncomeInvoices && Array.isArray(rawData.IncomeInvoices) && rawData.IncomeInvoices.length > 0)
+      item = rawData.IncomeInvoices[0];
+    else item = rawData;
+  }
   else if (item.IncomeInvoices && Array.isArray(item.IncomeInvoices) && item.IncomeInvoices.length > 0)
     item = item.IncomeInvoices[0];
   else if (Array.isArray(item) && item.length > 0)
     item = item[0];
 
-  // "id" is the internal DB primary key — this is what getPendingBinary needs
-  const id = item.id || null;
-  console.log(`[Biloop] extractInternalId: id=${id}, document_id=${item.document_id} (document_id is NOT used for PDF)`);
+  // Try multiple ID fields
+  const id = item.id || item.document_id || item.header_id || null;
+  console.log(`[Biloop] extractInternalId: found id=${id} (from keys: ${Object.keys(item).join(',')})`);
   return id;
 }
 
@@ -353,8 +360,13 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       ],
     };
 
-    if (resolvedNif)     payload.master_nif = resolvedNif;
-    if (resolvedAddress) payload.address    = resolvedAddress;
+    if (resolvedNif) {
+      payload.master_nif = resolvedNif;
+    } else {
+      // Some Biloop setups require a NIF. Use a dummy if we can't find one.
+      payload.master_nif = '00000000T'; 
+    }
+    if (resolvedAddress) payload.address = resolvedAddress;
 
     console.log('[Biloop] POST payload:', JSON.stringify(payload, null, 2));
 
@@ -367,8 +379,18 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     const result = await postRes.json();
     console.log('[Biloop] POST result:', JSON.stringify(result, null, 2));
 
-    if ((postRes.status !== 200 && postRes.status !== 201) || result.status === 'KO') {
-      return { success: false, message: result.message || `Biloop rejected the invoice (HTTP ${postRes.status}).` };
+    // CRITICAL: Biloop sometimes returns status=OK even if document creation failed or was partial.
+    const msg = result.message || '';
+    const isActuallySuccess = result.status === 'OK' && !msg.toLowerCase().includes('con errores') && !msg.toLowerCase().includes('excepto');
+    
+    // If successful, result.PostIncomesInvoices MUST exist and be non-empty for us to have an ID.
+    const hasPostArray = (result.PostIncomesInvoices && Array.isArray(result.PostIncomesInvoices) && result.PostIncomesInvoices.length > 0) ||
+                         (result.data?.PostIncomesInvoices && Array.isArray(result.data.PostIncomesInvoices) && result.data.PostIncomesInvoices.length > 0);
+    
+    if (!isActuallySuccess || !hasPostArray) {
+      const errorMsg = msg || `Biloop rejected the invoice (HTTP ${postRes.status}).`;
+      console.error(`[Biloop] POST failed validation: ${errorMsg}`);
+      return { success: false, message: errorMsg };
     }
 
     // Extract the internal id from POST response — this is what getPendingBinary needs
@@ -408,9 +430,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   if (!invoiceId) {
     return {
-      success: true,
+      success: false, // Treat as failure if PDF requested but no ID found
       pdfBase64: null,
-      message: 'Invoice uploaded but could not retrieve internal invoice ID for PDF. Check Biloop dashboard.',
+      message: 'Invoice processed by Biloop but could not retrieve internal ID for PDF generation. Please check Biloop manually.',
     };
   }
 

@@ -2531,7 +2531,8 @@
                     document.body.removeChild(link);
                     showToast("Factura descargada con éxito.", "success");
                 } else {
-                    showToast("Factura enviada, pero no tiene PDF disponible.", "warning");
+                    const msg = result.message || "La factura se envió, pero Biloop no devolvió un PDF.";
+                    showToast(msg, "warning");
                 }
             } else {
                 const errorMsg = result?.message || "Fallo al guardar la factura en Biloop.";
