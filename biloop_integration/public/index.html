@@ -2289,14 +2289,17 @@
                 </td>
                 <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
-                    <select class="status-select ${statusClass}" id="status-${index}"
-                            data-original="${statusValue}" data-row="${invoice['_sheet_row_index']}"
-                            onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
-                        <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                        <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
-                        <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
-                        <option value="Vencido" ${statusClass === 'vencido' ? 'selected' : ''}>Vencido</option>
-                    </select>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <select class="status-select ${statusClass}" id="status-${index}"
+                                data-original="${statusValue}" data-row="${invoice['_sheet_row_index']}"
+                                onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
+                            <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Cobrado" ${statusClass === 'cobrado' ? 'selected' : ''}>Cobrado</option>
+                            <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
+                            <option value="Vencido" ${statusClass === 'vencido' ? 'selected' : ''}>Vencido</option>
+                        </select>
+                        <div id="biloop-status-${index}"></div>
+                    </div>
                 </td>
                 <td>
                     <input type="date" class="pay-date-input" id="paydate-${index}" value="${payFormatted}" 
@@ -2456,11 +2459,13 @@
 
     async function uploadInvoice(index, downloadPdf = false) {
         const invoiceData = globalData[index];
-        const statusBadge = document.getElementById(`status-${index}`);
+        const biloopBadge = document.getElementById(`biloop-status-${index}`);
         const btn = document.getElementById(`btn-${index}`);
         
-        statusBadge.className = 'status-badge';
-        statusBadge.innerText = 'Subiendo...';
+        if (biloopBadge) {
+            biloopBadge.className = 'status-badge';
+            biloopBadge.innerText = 'Subiendo...';
+        }
         btn.disabled = true;
         
         try {
@@ -2474,20 +2479,26 @@
             const result = await response.json();
             
             if (response.ok && result.success) {
-                statusBadge.className = 'status-badge success';
-                statusBadge.innerText = 'Subido ✓';
+                if (biloopBadge) {
+                    biloopBadge.className = 'status-badge success';
+                    biloopBadge.innerText = 'Subido ✓';
+                }
                 btn.innerText = 'Hecho';
                 return result;
             } else {
-                statusBadge.className = 'status-badge error';
-                statusBadge.innerText = 'Error ✗';
+                if (biloopBadge) {
+                    biloopBadge.className = 'status-badge error';
+                    biloopBadge.innerText = 'Error ✗';
+                }
                 btn.disabled = false;
                 btn.innerText = 'Reintentar';
                 return result || { success: false, message: 'No response from server' };
             }
         } catch (error) {
-            statusBadge.className = 'status-badge error';
-            statusBadge.innerText = 'Error ✗';
+            if (biloopBadge) {
+                biloopBadge.className = 'status-badge error';
+                biloopBadge.innerText = 'Error ✗';
+            }
             btn.disabled = false;
             return null;
         }
