@@ -1853,8 +1853,8 @@
             const data = await response.json();
             
              if (response.ok) {
-                globalData = data;
-                renderTable(data);
+                globalData = data.reverse();
+                renderTable(globalData);
                 table.style.display = 'table';
             } else {
                 alert('Error al obtener datos: ' + data.error);
