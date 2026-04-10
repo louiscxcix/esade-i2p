@@ -1826,6 +1826,38 @@
         <iframe class="iframe-container" src="https://lookerstudio.google.com/embed/reporting/32fea7a0-0010-4831-b067-a8b387ee9cdd" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
     </div>
 
+    <!-- ─── View 5: Configuración ──────────── -->
+    <div id="configView" class="view-container app-view">
+        <div class="container" style="max-width: 600px;">
+            <header>
+                <div>
+                    <div class="page-title">Configuración</div>
+                    <div class="page-desc">Personaliza tu experiencia con el panel</div>
+                </div>
+            </header>
+
+            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px;">
+                <h3 style="margin-top:0; font-size: 14px; margin-bottom: 16px;">Inteligencia Artificial</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; font-size: 11px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; margin-bottom: 8px;">Modelo de Gemini</label>
+                    <select id="geminiModelSelect" style="width: 100%; padding: 10px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--r-sm); font-size: 13px; outline: none;">
+                        <option value="gemini-3-flash-preview">Gemini 3 Flash (Recomendado)</option>
+                        <option value="gemini-3.1-flash-preview">Gemini 3.1 Flash Lite</option>
+                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Avanzado)</option>
+                    </select>
+                    <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4;">
+                        Selecciona el modelo que prefieras para el Asistente Inteligente. Gemini 3 Flash es el recomendado por su rendimiento.
+                    </p>
+                </div>
+
+                <button class="btn-primary" onclick="saveGeminiModel()" style="width: 100%; justify-content: center; padding: 12px;">
+                    Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ─── View 5: AI Assistant ──────────── -->
     <div id="copilotView" class="view-container app-view">
         <div class="container">
@@ -2871,10 +2903,10 @@
                 chatHistoryArr.push({ role: 'user', content: userText });
                 chatHistoryArr.push({ role: 'model', content: data.reply });
             } else {
-                appendMessage('Error: ' + data.message, 'error');
+                appendMessage('Error: ' + (data.message || 'Error desconocido en el servidor de IA'), 'error');
             }
         } catch (error) {
-            appendMessage('No se pudo conectar con el servidor de IA.', 'error');
+            appendMessage('No se pudo conectar con el servidor de IA. Verifica tu conexión o el estado del servicio.', 'error');
         } finally {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar';
