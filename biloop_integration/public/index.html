@@ -2264,20 +2264,53 @@
 
     function applyInvoiceDateVis() {
         const { from, to } = invoiceDateFilter;
+        const searchTerm = document.getElementById('invoiceSearch').value.toLowerCase().trim();
+        let visibleCount = 0;
+
         document.querySelectorAll('.invoice-row').forEach(row => {
             const rowDate   = row.dataset.fecha || '';
+            const cliente   = row.dataset.cliente || '';
+            const candidato = row.dataset.candidato || '';
+
             const statusOk  = (currentFilter === 'all' || row.classList.contains(currentFilter));
             const dateOk    = dateInRange(rowDate, from, to);
-            row.style.display = (statusOk && dateOk) ? '' : 'none';
+            const searchOk  = !searchTerm || cliente.includes(searchTerm) || candidato.includes(searchTerm);
+
+            const isVisible = statusOk && dateOk && searchOk;
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+
+        const emptyState = document.getElementById('invoiceEmptyState');
+        const table = document.getElementById('invoiceTable');
+        if (emptyState && table && table.style.display !== 'none') {
+            emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+        }
     }
 
     function applyMarginDateVis() {
         const { from, to } = marginDateFilter;
+        const searchTerm = document.getElementById('marginSearch').value.toLowerCase().trim();
+        let visibleCount = 0;
+
         document.querySelectorAll('.margin-invoice-row').forEach(row => {
             const rowDate = row.dataset.fecha || '';
-            row.style.display = dateInRange(rowDate, from, to) ? '' : 'none';
+            const cliente = row.dataset.cliente || '';
+            const candidato = row.dataset.candidato || '';
+            
+            const dateOk    = dateInRange(rowDate, from, to);
+            const searchOk  = !searchTerm || cliente.includes(searchTerm) || candidato.includes(searchTerm);
+            
+            const isVisible = dateOk && searchOk;
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+
+        const emptyState = document.getElementById('marginEmptyState');
+        const table = document.getElementById('marginTable');
+        if (emptyState && table && table.style.display !== 'none') {
+            emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+        }
     }
 
     function checkUnsavedChanges() {
@@ -2408,6 +2441,8 @@
             const tr = document.createElement('tr');
             tr.className = `invoice-row ${statusClass}`;
             tr.dataset.fecha = formattedDate || '';
+            tr.dataset.cliente = (invoice['Cliente'] || '').toLowerCase();
+            tr.dataset.candidato = (invoice['Candidato'] || '').toLowerCase();
             tr.style.display = (currentFilter === 'all' || currentFilter === statusClass) ? '' : 'none';
             tr.innerHTML = `
                 <td>
@@ -2771,6 +2806,8 @@
             // Store Fecha Factura from the invoice record for date filtering
             const marginFechaRaw = record['Fecha Factura'] || record['_invoice_date'] || '';
             tr.dataset.fecha = toISODate(marginFechaRaw) || '';
+            tr.dataset.cliente = (record._client_name || '').toLowerCase();
+            tr.dataset.candidato = (record._candidate_name || '').toLowerCase();
             
             let html = `
                 <td>
