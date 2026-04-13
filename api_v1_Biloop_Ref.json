@@ -1792,7 +1792,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": {
+                "properties":{
                   "id": {
                     "type": "integer",
                     "description": "ID único del documento",
@@ -1803,19 +1803,19 @@
                     "description": "Código de empresa en BILOOP",
                     "example": "E00908"
                   },
-                  "nombre": {
+                  "name": {
                     "type": "string",
                     "maxLength": 200,
                     "description": "Nombre del documento",
                     "example": "Documento_Completo.pdf"
                   },
-                  "fecha": {
+                  "date": {
                     "type": "string",
                     "format": "date",
                     "description": "Fecha del documento (YYYY-mm-dd)",
                     "example": "2024-02-15"
                   },
-                  "tipoDoc": {
+                  "tipDoc": {
                     "type": "string",
                     "maxLength": 50,
                     "enum": [
@@ -1849,44 +1849,44 @@
                     "description": "Tipo de documento",
                     "example": "sell_invoices"
                   },
-                  "ejercicio": {
+                  "year": {
                     "type": "integer",
                     "minimum": 1900,
                     "maximum": 2100,
                     "description": "Año del ejercicio fiscal",
                     "example": 2024
                   },
-                  "visible": {
+                  "isVisible": {
                     "type": "integer",
                     "enum": [0, 1],
                     "description": "Visibilidad del documento (0 = no visible, 1 = visible)",
                     "example": 1
                   },
-                  "idCentroCosto": {
+                  "costCenterId": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "ID del centro de coste 1",
                     "example": 10
                   },
-                  "idCentroCosto2": {
+                  "costCenterId2": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "ID del centro de coste 2",
                     "example": 20
                   },
-                  "idCentroCosto3": {
+                  "costCenterId3": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "ID del centro de coste 3",
                     "example": 30
                   },
-                  "idCentroCosto4": {
+                  "costCenterId4": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "ID del centro de coste 4",
                     "example": 40
                   },
-                  "observacion": {
+                  "observation": {
                     "type": "string",
                     "maxLength": 100,
                     "description": "Observaciones sobre el documento",
@@ -9877,6 +9877,175 @@
         "responses": {
           "default": {
             "$ref": "#/components/schemas/PostIncomesOffers"
+          }
+        }
+      }
+    },
+    "/api-global/v1/erp/incomes/offers/updateA3NumberOffer": {
+      "post": {
+        "summary": "Actualizar número A3 de una oferta",
+        "description": "Actualiza el número A3 (identificador externo) de una oferta de venta existente. Solo se pueden modificar ofertas que pertenezcan a la empresa del usuario autenticado.",
+        "operationId": "updateA3NumberOffer",
+        "tags": ["ERPLoop"],
+        "security": [
+          {
+            "SUBSCRIPTION_KEY": [],
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID único de la oferta a modificar (ID de cabecera).",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "example": "1312"
+          },
+          {
+            "name": "a3Number",
+            "in": "query",
+            "description": "Nuevo número A3 a asignar a la oferta. Debe ser un número entero positivo.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "example": "12345"
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "description": "ID de la empresa a la que pertenece la oferta.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "E00908"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Número A3 actualizado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Se ha modificado el campo A3Number de la factura 1312 con el valor 12345"
+                    },
+                    "data": {
+                      "type": "integer",
+                      "example": 1312
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros inválidos o fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "KO"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "{\"id\":[\"El campo id es obligatorio\"],\"a3Number\":[\"El campo a3Number no puede ser mayor a 2147483647\"]}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Oferta no encontrada o usuario sin permisos en la empresa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "KO"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "No se ha encontrado la oferta con el id proporcionado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "KO"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Error al procesar la solicitud"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-examples": {
+          "example_1": {
+            "summary": "Actualizar A3Number de una oferta",
+            "description": "Modifica el número A3 de la oferta con ID 1312 al valor 12345",
+            "value": "/api-global/v1/erp/incomes/offers/updateA3NumberOffer?id=1312&a3Number=12345"
+          },
+          "example_2": {
+            "summary": "Error por parámetro faltante",
+            "description": "Intenta actualizar sin proporcionar el parámetro a3Number",
+            "value": "/api-global/v1/erp/incomes/offers/updateA3NumberOffer?id=1312"
+          },
+          "example_3": {
+            "summary": "Error por valor fuera de rango",
+            "description": "Intenta asignar un número A3 que supera el máximo permitido",
+            "value": "/api-global/v1/erp/incomes/offers/updateA3NumberOffer?id=1312&a3Number=5999999999999999"
           }
         }
       }

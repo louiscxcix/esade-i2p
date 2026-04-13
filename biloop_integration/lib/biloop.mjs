@@ -343,6 +343,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     const payload = {
       company_id:          COMPANY_ID,
       master_name:         resolvedName,
+      master_reason:       resolvedName,
       date:                dateStr,
       operation_date:      dateStr,
       issuance_date:       dateStr,

@@ -91,9 +91,24 @@ export async function fetchInvoiceData() {
   const validRows = [];
 
     const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : 2); // C is 2
-    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : (findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 3); // D is 3
-    const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : (findIdx(headers, ['posición']) !== -1 ? findIdx(headers, ['posición']) : 4); // E is 4
-    const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 6; // G is 6
+    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) :
+                      findIdx(headers, ['client']) !== -1 ? findIdx(headers, ['client']) :
+                      findIdx(headers, ['customer']) !== -1 ? findIdx(headers, ['customer']) :
+                      findIdx(headers, ['empresa']) !== -1 ? findIdx(headers, ['empresa']) :
+                      findIdx(headers, ['compañía']) !== -1 ? findIdx(headers, ['compañía']) :
+                      findIdx(headers, ['company']) !== -1 ? findIdx(headers, ['company']) :
+                      findIdx(headers, ['facturar']) !== -1 ? findIdx(headers, ['facturar']) :
+                      findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 
+                      findIdx(headers, ['razon social']) !== -1 ? findIdx(headers, ['razon social']) : 3; // D is 3
+    const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : 
+                      findIdx(headers, ['posición']) !== -1 ? findIdx(headers, ['posición']) : 
+                      findIdx(headers, ['position']) !== -1 ? findIdx(headers, ['position']) :
+                      findIdx(headers, ['rol']) !== -1 ? findIdx(headers, ['rol']) :
+                      findIdx(headers, ['role']) !== -1 ? findIdx(headers, ['role']) : 4; // E is 4
+    const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 
+                      findIdx(headers, ['candidate']) !== -1 ? findIdx(headers, ['candidate']) : 
+                      findIdx(headers, ['nombre']) !== -1 ? findIdx(headers, ['nombre']) :
+                      findIdx(headers, ['name']) !== -1 ? findIdx(headers, ['name']) : 6; // G is 6
     const dateIdx   = findIdx(headers, ['fecha', 'factura']) !== -1 ? findIdx(headers, ['fecha', 'factura']) : 11; // L is 11
     const statusIdx = findIdx(headers, ['estado']) !== -1 ? findIdx(headers, ['estado']) : 19; // T is 19
     const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'est', 'pago']) : 20; // U is 20
@@ -172,8 +187,19 @@ export async function fetchMarginData() {
   const validRows = [];
 
     const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
-    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : findIdx(headers, ['razon social']);
-    const candIdx   = findIdx(headers, ['candidato']);
+    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) :
+                      findIdx(headers, ['client']) !== -1 ? findIdx(headers, ['client']) :
+                      findIdx(headers, ['customer']) !== -1 ? findIdx(headers, ['customer']) :
+                      findIdx(headers, ['empresa']) !== -1 ? findIdx(headers, ['empresa']) :
+                      findIdx(headers, ['compañía']) !== -1 ? findIdx(headers, ['compañía']) :
+                      findIdx(headers, ['company']) !== -1 ? findIdx(headers, ['company']) :
+                      findIdx(headers, ['facturar']) !== -1 ? findIdx(headers, ['facturar']) :
+                      findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 
+                      findIdx(headers, ['razon social']) !== -1 ? findIdx(headers, ['razon social']) : 3;
+    const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 
+                      findIdx(headers, ['candidate']) !== -1 ? findIdx(headers, ['candidate']) : 
+                      findIdx(headers, ['nombre']) !== -1 ? findIdx(headers, ['nombre']) :
+                      findIdx(headers, ['name']) !== -1 ? findIdx(headers, ['name']) : 6;
     const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
     const payIdx    = findIdx(headers, ['fecha', 'cobro']) === -1 ? findIdx(headers, ['fecha', 'pago']) : findIdx(headers, ['fecha', 'cobro']);
 
