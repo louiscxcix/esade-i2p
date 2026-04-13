@@ -339,10 +339,50 @@ export async function updateMarginsBatch(updates) {
 export async function createNewInvoice(invoiceData) {
   const sheets = getSheetsClient();
 
-  // Get existing ID Factura from column C (index 2)
+  // Get headers from row 4 to find columns dynamically
+  const headerResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${WORKSHEET_NAME}!A4:AJ4`,
+  });
+
+  const headers = (headerResponse.data.values && headerResponse.data.values[0])
+    ? headerResponse.data.values[0].map(h => String(h).trim())
+    : [];
+
+  const findIdx = (keywords) => {
+    return headers.findIndex(h => {
+      const lowerH = (h || '').toLowerCase().trim();
+      return keywords.every(k => lowerH.includes(k.toLowerCase()));
+    });
+  };
+
+  const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
+  const clientIdx = findIdx(['cliente']);
+  const procIdx   = findIdx(['proceso']);
+  const candIdx   = findIdx(['candidato']);
+  const startIdx  = findIdx(['fecha', 'inicio']);
+  const salIdx    = findIdx(['salario', 'fijo']);
+  const dateIdx   = findIdx(['fecha', 'factura']);
+  const feeIdx    = findIdx(['fee', '%']);
+  const amtIdx    = findIdx(['importe', 'factura']);
+  const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
+
+  // Determine column letter for ID to get max ID
+  const colIndexToLetter = (idx) => {
+    let letter = '';
+    let curr = idx;
+    while (curr >= 0) {
+      letter = String.fromCharCode(65 + (curr % 26)) + letter;
+      curr = Math.floor(curr / 26) - 1;
+    }
+    return letter;
+  };
+  const idColLetter = idIdx !== -1 ? colIndexToLetter(idIdx) : 'C';
+
+  // Get existing ID Factura 
   const idResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${WORKSHEET_NAME}!C:C`,
+    range: `${WORKSHEET_NAME}!${idColLetter}:${idColLetter}`,
   });
 
   const allIds = (idResponse.data.values || []).flat();
@@ -356,23 +396,26 @@ export async function createNewInvoice(invoiceData) {
   }
   const nextId = `INV-${String(maxNum + 1).padStart(4, '0')}`;
 
-  // Build a 36-column row (A through AJ)
-  const newRow = new Array(36).fill('');
-  newRow[2] = nextId;                                 // C: ID Factura
-  newRow[3] = invoiceData.client_name || '';           // D: Cliente
-  newRow[4] = invoiceData.position || '';              // E: Proceso
-  newRow[6] = invoiceData.candidate_name || '';        // G: Candidato
-  newRow[7] = invoiceData.start_date || '';            // H: Fecha de Inicio
-  newRow[8] = invoiceData.fix_salary || '';            // I: Salario fijo
-  newRow[11] = invoiceData.invoice_date || '';         // L: Fecha Factura
-  newRow[12] = invoiceData.fee_percent || '';          // M: Fee % 
-  newRow[13] = invoiceData.invoice_amount || '';       // N: Importe Factura
-  newRow[19] = invoiceData.status || 'Pending';       // T: Estado
+  // Build a row matching the headers length (at least 36 to AJ)
+  const newRow = new Array(Math.max(headers.length, 36)).fill('');
+  
+  // Assign fields dynamically if columns exist, otherwise fallback
+  if (idIdx !== -1) newRow[idIdx] = nextId; else newRow[2] = nextId;
+  if (clientIdx !== -1) newRow[clientIdx] = invoiceData.client_name || ''; else newRow[3] = invoiceData.client_name || '';
+  if (procIdx !== -1) newRow[procIdx] = invoiceData.position || ''; else newRow[4] = invoiceData.position || '';
+  if (candIdx !== -1) newRow[candIdx] = invoiceData.candidate_name || ''; else newRow[6] = invoiceData.candidate_name || '';
+  if (startIdx !== -1) newRow[startIdx] = invoiceData.start_date || ''; else newRow[7] = invoiceData.start_date || '';
+  if (salIdx !== -1) newRow[salIdx] = invoiceData.fix_salary || ''; else newRow[8] = invoiceData.fix_salary || '';
+  if (dateIdx !== -1) newRow[dateIdx] = invoiceData.invoice_date || ''; else newRow[11] = invoiceData.invoice_date || '';
+  if (feeIdx !== -1) newRow[feeIdx] = invoiceData.fee_percent || ''; else newRow[12] = invoiceData.fee_percent || '';
+  if (amtIdx !== -1) newRow[amtIdx] = invoiceData.invoice_amount || ''; else newRow[13] = invoiceData.invoice_amount || '';
+  if (statusIdx !== -1) newRow[statusIdx] = invoiceData.status || 'Pending'; else newRow[19] = invoiceData.status || 'Pending';
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: `${WORKSHEET_NAME}!A:AJ`,
     valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [newRow] },
   });
 
