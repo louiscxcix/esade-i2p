@@ -1736,6 +1736,11 @@
                         Nueva Factura
                     </button>
 
+                    <button class="btn-danger btn-inactive" onclick="deleteSelectedInvoices('main')" id="deleteInvoicesBtn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        Eliminar
+                    </button>
+
                     <button class="btn-ghost" onclick="fetchData()" id="refreshBtn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         Actualizar
@@ -1858,6 +1863,11 @@
                     <button class="btn-success" onclick="openNewInvoiceModal()">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Nueva Factura
+                    </button>
+
+                    <button class="btn-danger btn-inactive" onclick="deleteSelectedInvoices('margin')" id="deleteMarginsBtn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        Eliminar
                     </button>
 
                     <button class="btn-ghost" onclick="fetchMarginData()" id="refreshMarginBtn">
@@ -2343,14 +2353,37 @@
 
     function checkSelection() {
         const uploadBtn = document.getElementById('uploadBtn');
-        const checked = document.querySelectorAll('.row-checkbox:checked').length;
+        const deleteBtn = document.getElementById('deleteInvoicesBtn');
+        const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+        
         if (uploadBtn) {
-            if (checked > 0) {
+            if (checkedCount > 0) {
                 uploadBtn.classList.remove('btn-inactive');
-                uploadBtn.setAttribute('data-tooltip', `${checked} factura(s) seleccionada(s)`);
+                uploadBtn.setAttribute('data-tooltip', `${checkedCount} factura(s) seleccionada(s)`);
             } else {
                 uploadBtn.classList.add('btn-inactive');
                 uploadBtn.setAttribute('data-tooltip', 'Selecciona facturas primero');
+            }
+        }
+
+        if (deleteBtn) {
+            if (checkedCount > 0) {
+                deleteBtn.classList.remove('btn-inactive');
+            } else {
+                deleteBtn.classList.add('btn-inactive');
+            }
+        }
+    }
+
+    function checkMarginSelection() {
+        const deleteBtn = document.getElementById('deleteMarginsBtn');
+        const checkedCount = document.querySelectorAll('.margin-row-checkbox:checked').length;
+        
+        if (deleteBtn) {
+            if (checkedCount > 0) {
+                deleteBtn.classList.remove('btn-inactive');
+            } else {
+                deleteBtn.classList.add('btn-inactive');
             }
         }
     }
@@ -2687,6 +2720,66 @@
         uploadInvoice(index);
     }
 
+    async function deleteSelectedInvoices(context) {
+        const selector = context === 'main' ? '.row-checkbox:checked' : '.margin-row-checkbox:checked';
+        const checkedBoxes = document.querySelectorAll(selector);
+        
+        if (checkedBoxes.length === 0) return;
+        
+        const count = checkedBoxes.length;
+        const confirmMsg = count === 1 
+            ? '¿Estás seguro de que deseas eliminar esta factura de la aplicación y del Google Spreadsheet? Esta acción no se puede deshacer.'
+            : `¿Estás seguro de que deseas eliminar estas ${count} facturas de la aplicación y del Google Spreadsheet? Esta acción no se puede deshacer.`;
+            
+        if (!confirm(confirmMsg)) return;
+        
+        const btnId = context === 'main' ? 'deleteInvoicesBtn' : 'deleteMarginsBtn';
+        const btn = document.getElementById(btnId);
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:12px; height:12px; border-width:1.5px"></div> Eliminando...';
+        
+        // Get the real spreadsheet row indices
+        const rowIndices = [];
+        checkedBoxes.forEach(cb => {
+            const index = parseInt(cb.value);
+            const data = context === 'main' ? globalData[index] : globalMarginData[index];
+            if (data && data._sheet_row_index) {
+                rowIndices.push(data._sheet_row_index);
+            }
+        });
+        
+        try {
+            const response = await fetch('/api/delete_invoices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ row_indices: rowIndices })
+            });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showToast(`¡${count} factura(s) eliminada(s) correctamente!`);
+                // Refresh data
+                fetchData();
+                fetchMarginData();
+                // Reset select all checkboxes
+                const selectAllMain = document.getElementById('selectAll');
+                const selectAllMargin = document.getElementById('selectAllMargin');
+                if (selectAllMain) selectAllMain.checked = false;
+                if (selectAllMargin) selectAllMargin.checked = false;
+            } else {
+                showToast('Error al eliminar: ' + result.message, 'error');
+            }
+        } catch (error) {
+            showToast('Error de conexión con el servidor', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (context === 'main') checkSelection(); else checkMarginSelection();
+        }
+    }
+
     async function saveAndDownloadInvoice(index) {
         if (!confirm('¿Estás seguro de que quieres guardar y descargar esta factura de Biloop?')) return;
         const btnSave = document.getElementById(`btn-save-${index}`);
@@ -2808,7 +2901,7 @@
             let html = `
                 <td>
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" class="margin-row-checkbox" value="${index}">
+                        <input type="checkbox" class="margin-row-checkbox" value="${index}" onchange="checkMarginSelection()">
                     </div>
                 </td>
                 <td style="white-space: nowrap;">${record._client_name}</td>
@@ -2872,6 +2965,7 @@
     function toggleAllMargin(source) {
         const checkboxes = document.querySelectorAll('.margin-row-checkbox');
         checkboxes.forEach(cb => cb.checked = source.checked);
+        checkMarginSelection();
     }
 
     function checkMarginUnsavedChanges() {

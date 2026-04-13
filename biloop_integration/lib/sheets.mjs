@@ -422,4 +422,33 @@ export async function createNewInvoice(invoiceData) {
   return { success: true, message: `New invoice ${nextId} created.`, invoice_id: nextId };
 }
 
+/** Delete invoices from the sheet by row index */
+export async function deleteInvoices(rowIndices) {
+  const sheets = getSheetsClient();
+  
+  // Sort indices descending to avoid shifting issues
+  const sortedIndices = [...new Set(rowIndices)]
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  const requests = sortedIndices.map(ri => ({
+    deleteDimension: {
+      range: {
+        sheetId: parseInt(GID),
+        startIndex: ri - 1, // 0-indexed
+        endIndex: ri,
+      }
+    }
+  }));
+
+  if (requests.length > 0) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: { requests },
+    });
+  }
+
+  return { success: true, message: `Deleted ${requests.length} invoice(s).` };
+}
+
 export { MARGIN_COLUMNS };
