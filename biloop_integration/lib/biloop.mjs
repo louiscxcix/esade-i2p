@@ -296,7 +296,10 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   const clientInfo = await getClientInfo(clientName, token);
   const resolvedNif     = clientInfo.nif    || null;
   const resolvedAddress = clientInfo.address || null;
-  const resolvedName    = clientInfo.canonicalName || clientName;
+  
+  // CRITICAL FIX: NEVER selectively overwrite what the user typed in the Google Sheet. 
+  // Biloop must use the exact name provided in the Sheet on the printed PDF.
+  const resolvedName    = clientName;
 
   console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
 
