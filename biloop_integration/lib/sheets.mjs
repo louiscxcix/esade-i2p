@@ -90,16 +90,16 @@ export async function fetchInvoiceData() {
   const dataRows = rows.slice(1);
   const validRows = [];
 
-    const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
-    const clientIdx = findIdx(headers, ['cliente']);
-    const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : findIdx(headers, ['posición']);
-    const candIdx   = findIdx(headers, ['candidato']);
-    const dateIdx   = findIdx(headers, ['fecha', 'factura']);
-    const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
-    const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) === -1 ? findIdx(headers, ['estimada', 'pago']) : findIdx(headers, ['fecha', 'est', 'pago']);
-    const payIdx    = findIdx(headers, ['fecha', 'cobro']) === -1 ? findIdx(headers, ['fecha', 'pago']) : findIdx(headers, ['fecha', 'cobro']);
+    const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : 2); // C is 2
+    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : (findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 3); // D is 3
+    const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : (findIdx(headers, ['posición']) !== -1 ? findIdx(headers, ['posición']) : 4); // E is 4
+    const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 6; // G is 6
+    const dateIdx   = findIdx(headers, ['fecha', 'factura']) !== -1 ? findIdx(headers, ['fecha', 'factura']) : 11; // L is 11
+    const statusIdx = findIdx(headers, ['estado']) !== -1 ? findIdx(headers, ['estado']) : 19; // T is 19
+    const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'est', 'pago']) : 20; // U is 20
+    const payIdx    = findIdx(headers, ['fecha', 'cobro']) !== -1 ? findIdx(headers, ['fecha', 'cobro']) : 21; // V is 21
     const feeIdx    = findIdx(headers, ['fee', '%']);
-    const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : findIdx(headers, ['importe', 'total']);
+    const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : 13; // N is 13
     const salIdx    = findIdx(headers, ['salario', 'fijo']);
     const ivaIdx    = findIdx(headers, ['iva']);
     const brutoIdx  = findIdx(headers, ['factura', 'bruto']) !== -1 ? findIdx(headers, ['factura', 'bruto']) : findIdx(headers, ['importe', 'cobro']);
@@ -172,7 +172,7 @@ export async function fetchMarginData() {
   const validRows = [];
 
     const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
-    const clientIdx = findIdx(headers, ['cliente']);
+    const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : findIdx(headers, ['razon social']);
     const candIdx   = findIdx(headers, ['candidato']);
     const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
     const payIdx    = findIdx(headers, ['fecha', 'cobro']) === -1 ? findIdx(headers, ['fecha', 'pago']) : findIdx(headers, ['fecha', 'cobro']);
@@ -350,14 +350,15 @@ export async function createNewInvoice(invoiceData) {
     ? headerResponse.data.values[0].map(h => String(h).trim())
     : [];
 
-  const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
-  const clientIdx = findIdx(headers, ['cliente']);
-  const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : findIdx(headers, ['posición']);
-  const candIdx   = findIdx(headers, ['candidato']);
-  const dateIdx   = findIdx(headers, ['fecha', 'factura']);
-  const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : (findIdx(headers, ['importe']) !== -1 ? findIdx(headers, ['importe']) : findIdx(headers, ['importe', 'total']));
-  const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) === -1 ? findIdx(headers, ['estimada', 'pago']) : findIdx(headers, ['fecha', 'est', 'pago']);
-  const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
+  const idIdx     = findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : 2; // C is 2
+  const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : (findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 3); // D is 3
+  const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : (findIdx(headers, ['posición']) !== -1 ? findIdx(headers, ['posición']) : 4); // E is 4
+  const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 6; // G is 6
+  const dateIdx   = findIdx(headers, ['fecha', 'factura']) !== -1 ? findIdx(headers, ['fecha', 'factura']) : 11; // L is 11
+  const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : 13; // N is 13
+  const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'est', 'pago']) : 20; // U is 20
+  const statusIdx = findIdx(headers, ['estado']) !== -1 ? findIdx(headers, ['estado']) : 19; // T is 19
+
 
   // Determine column letter for ID to get max ID
   const colIndexToLetter = (idx) => {
@@ -391,7 +392,7 @@ export async function createNewInvoice(invoiceData) {
   // Build a row matching the headers length (at least 36 to AJ)
   const newRow = new Array(Math.max(headers.length, 36)).fill('');
   
-  // Assign fields dynamically if columns exist, otherwise fallback securely
+  // Assign fields using determined indices
   if (idIdx !== -1) newRow[idIdx] = nextId; 
   if (clientIdx !== -1) newRow[clientIdx] = invoiceData.client_name || ''; 
   if (procIdx !== -1) newRow[procIdx] = invoiceData.position || ''; 
@@ -400,12 +401,6 @@ export async function createNewInvoice(invoiceData) {
   if (estPayIdx !== -1) newRow[estPayIdx] = invoiceData.est_payment_date || ''; 
   if (amtIdx !== -1) newRow[amtIdx] = invoiceData.amount || ''; 
   if (statusIdx !== -1) newRow[statusIdx] = invoiceData.status || 'Pendiente';
-
-  // Fallback defaults if columns weren't found (only if indices are empty)
-  if (idIdx === -1 && newRow[2] === '') newRow[2] = nextId; // Col C
-  if (clientIdx === -1 && newRow[3] === '') newRow[3] = invoiceData.client_name || ''; // Col D
-  if (procIdx === -1 && newRow[4] === '') newRow[4] = invoiceData.position || ''; // Col E
-  if (candIdx === -1 && newRow[6] === '') newRow[6] = invoiceData.candidate_name || ''; // Col G
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
