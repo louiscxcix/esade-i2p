@@ -87,7 +87,8 @@ function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
   const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
   const resolved  = (resolvedClientName || '').toUpperCase();
 
-  const base = `${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
+  // Add salt 'V2' to bypass cached records with old IDs
+  const base = `V2|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
 
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
@@ -377,8 +378,16 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     if (resolvedNif) {
       payload.master_nif = resolvedNif;
     } else {
-      // Some Biloop setups require a NIF. Use a dummy if we can't find one.
-      payload.master_nif = '00000000T'; 
+      // GENERATE UNIQUE VIRTUAL NIF: 
+      // Shared dummy NIFs like '00000000T' cause Biloop to override names with its own DB record.
+      // We generate a deterministic alphanumeric ID based on the client name.
+      let nameHash = 0;
+      for (let i = 0; i < resolvedName.length; i++) {
+        nameHash = ((nameHash << 5) - nameHash) + resolvedName.charCodeAt(i);
+        nameHash |= 0;
+      }
+      payload.master_nif = `Z${Math.abs(nameHash).toString(36).toUpperCase().padStart(8, '0')}`;
+      console.log(`[Biloop] No NIF found. Generated unique virtual NIF: ${payload.master_nif} for "${resolvedName}"`);
     }
     if (resolvedAddress) payload.address = resolvedAddress;
 
