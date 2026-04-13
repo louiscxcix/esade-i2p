@@ -2574,9 +2574,9 @@
     // Save changed status and/or estimated payment dates
     async function saveInvoiceFields() {
         if (document.getElementById('saveFieldsBtn').classList.contains('btn-inactive')) return;
-        const statusSelects = document.querySelectorAll('.status-select');
-        const estDateInputs = document.querySelectorAll('.est-date-input');
-        const dateInputs = document.querySelectorAll('.date-input, .pay-date-input');
+        const statusSelects = document.querySelectorAll('.invoice-row .status-select');
+        const estDateInputs = document.querySelectorAll('.invoice-row .est-date-input');
+        const dateInputs = document.querySelectorAll('.invoice-row .date-input, .invoice-row .pay-date-input');
         
         // Build a map: row_index -> { status?, est_payment_date?, invoice_date? }
         const rowMap = {};
@@ -2795,12 +2795,22 @@
             // 2. Download invoice if successful and pdf is present
             if (result && result.success) {
                 if (result.pdfBase64) {
+                    const binaryStr = atob(result.pdfBase64);
+                    const len = binaryStr.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    
                     const link = document.createElement('a');
-                    link.href = `data:application/pdf;base64,${result.pdfBase64}`;
+                    link.href = url;
                     link.download = result.fileName || `Factura_${globalData[index].Cliente}.pdf`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
                     showToast("Factura descargada con éxito.", "success");
                 } else {
                     const msg = result.message || "La factura se envió, pero Biloop no devolvió un PDF.";
