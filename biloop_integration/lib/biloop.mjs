@@ -406,19 +406,16 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     const msg = result.message || '';
     const isActuallySuccess = result.status === 'OK' && !msg.toLowerCase().includes('con errores') && !msg.toLowerCase().includes('excepto');
     
-    // If successful, result.PostIncomesInvoices MUST exist and be non-empty for us to have an ID.
-    const hasPostArray = (result.PostIncomesInvoices && Array.isArray(result.PostIncomesInvoices) && result.PostIncomesInvoices.length > 0) ||
-                         (result.data?.PostIncomesInvoices && Array.isArray(result.data.PostIncomesInvoices) && result.data.PostIncomesInvoices.length > 0);
-    
-    if (!isActuallySuccess || !hasPostArray) {
-      const errorMsg = msg || `Biloop rejected the invoice (HTTP ${postRes.status}).`;
-      console.error(`[Biloop] POST failed validation: ${errorMsg}`);
-      return { success: false, message: errorMsg };
-    }
-
     // Extract the internal id from POST response — this is what getPendingBinary needs
     invoiceId = extractInternalId(result);
     console.log(`[Biloop] internal id from POST response: ${invoiceId}`);
+
+    if (!isActuallySuccess || !invoiceId) {
+      const errorMsg = msg || (invoiceId ? `Biloop rechazó la factura (HTTP ${postRes.status}).` : 'Fallo al extraer el ID interno, comprueba Biloop.');
+      console.error(`[Biloop] POST validation failed: ${errorMsg}`);
+      return { success: false, message: errorMsg };
+    }
+
   }
 
   // Early return if PDF not needed
