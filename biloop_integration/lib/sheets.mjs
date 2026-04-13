@@ -375,23 +375,23 @@ export async function createNewInvoice(invoiceData) {
   }
   const nextId = `INV-${String(maxNum + 1).padStart(4, '0')}`;
 
-  // Build a row representing A through V (22 columns, max index 21)
-  // Ensure we at least allocate enough to reach AJ (index 35) to prevent misalignments
-  const newRow = new Array(36).fill('');
+  // Build a row representing C through V (C is index 0)
+  // Ensure we allocate enough to reach AJ to prevent misalignments
+  const newRow = new Array(34).fill('');
   
-  // Assign fields using exact hardcoded indices provided by the user
-  newRow[idIdx] = nextId;                                  // Index 2 (Col C)
-  newRow[clientIdx] = invoiceData.client_name || '';       // Index 3 (Col D)
-  newRow[procIdx] = invoiceData.position || '';            // Index 4 (Col E)
-  newRow[candIdx] = invoiceData.candidate_name || '';      // Index 6 (Col G)
-  newRow[dateIdx] = invoiceData.invoice_date || '';        // Index 11 (Col L)
-  newRow[amtIdx] = invoiceData.amount || '';               // Index 13 (Col N) -> Raw string untouched
-  newRow[statusIdx] = invoiceData.status || 'Pendiente';   // Index 19 (Col T)
-  newRow[estPayIdx] = invoiceData.est_payment_date || '';  // Index 20 (Col U)
+  // Assign fields using exact hardcoded indices relative to Column C (Index 0)
+  newRow[0] = nextId;                                      // Col C
+  newRow[1] = invoiceData.client_name || '';               // Col D
+  newRow[2] = invoiceData.position || '';                  // Col E
+  newRow[4] = invoiceData.candidate_name || '';            // Col G
+  newRow[9] = invoiceData.invoice_date || '';              // Col L
+  newRow[11] = invoiceData.amount || '';                   // Col N -> Raw string untouched
+  newRow[17] = invoiceData.status || 'Pendiente';          // Col T
+  newRow[18] = invoiceData.est_payment_date || '';         // Col U
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
-    range: `${WORKSHEET_NAME}!A:AJ`,
+    range: `${WORKSHEET_NAME}!C:AJ`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [newRow] },
