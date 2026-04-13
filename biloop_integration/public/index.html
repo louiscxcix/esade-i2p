@@ -2477,7 +2477,7 @@
             tr.innerHTML = `
                 <td>
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" class="row-checkbox" value="${index}" onchange="checkSelection()">
+                        <input type="checkbox" class="row-checkbox" value="${invoice._sheet_row_index}" onchange="checkSelection()">
                     </div>
                 </td>
                 <td style="color:var(--text-primary);font-weight:500;">
@@ -2486,17 +2486,17 @@
                 <td>${invoice['Candidato']}</td>
                 <td style="color: var(--text-muted);">${invoice['Proceso']}</td>
                 <td>
-                    <input type="date" class="date-input" id="date-${index}" value="${formattedDate}" 
+                    <input type="date" class="date-input" id="date-${invoice._sheet_row_index}" value="${formattedDate}" 
                            data-original="${formattedDate}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
                 </td>
                 <td>
-                    <input type="date" class="est-date-input" id="estdate-${index}" value="${estPayFormatted}"
+                    <input type="date" class="est-date-input" id="estdate-${invoice._sheet_row_index}" value="${estPayFormatted}"
                            data-original="${estPayFormatted}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
                 </td>
                 <td class="currency">€ ${(invoice['Importe factura'] || 0).toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                 <td>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <select class="status-select ${statusClass}" id="status-${index}"
+                        <select class="status-select ${statusClass}" id="status-${invoice._sheet_row_index}"
                                 data-original="${statusValue}" data-row="${invoice['_sheet_row_index']}"
                                 onchange="updateStatusSelectStyle(this); checkUnsavedChanges()">
                             <option value="Pendiente" ${statusClass === 'pendiente' ? 'selected' : ''}>Pendiente</option>
@@ -2504,21 +2504,21 @@
                             <option value="Inminente" ${statusClass === 'inminente' ? 'selected' : ''}>Inminente</option>
                             <option value="Vencido" ${statusClass === 'vencido' ? 'selected' : ''}>Vencido</option>
                         </select>
-                        <div id="biloop-status-${index}"></div>
+                        <div id="biloop-status-${invoice._sheet_row_index}"></div>
                     </div>
                 </td>
                 <td>
-                    <input type="date" class="pay-date-input" id="paydate-${index}" value="${payFormatted}" 
+                    <input type="date" class="pay-date-input" id="paydate-${invoice._sheet_row_index}" value="${payFormatted}" 
                            data-original="${payFormatted}" data-row="${invoice['_sheet_row_index']}" onchange="checkUnsavedChanges()">
                 </td>
                 <td>
                     <div class="row-actions">
-                        <button class="btn-row" onclick="uploadSingle(${index})" id="btn-${index}" title="Enviar a Biloop">
+                        <button class="btn-row" onclick="uploadSingle(${invoice._sheet_row_index})" id="btn-${invoice._sheet_row_index}" title="Enviar a Biloop">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                             Biloop
                         </button>
-                        <button class="btn-row btn-row-accent" onclick="saveAndDownloadInvoice(${index})" id="btn-save-${index}" title="Guardar y descargar PDF">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <button class="btn-row btn-row-accent" onclick="saveAndDownloadInvoice(${invoice._sheet_row_index})" id="btn-save-${invoice._sheet_row_index}" title="Guardar y descargar PDF">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
                             PDF
                         </button>
                     </div>
@@ -2669,19 +2669,25 @@
     }
 
 
-    async function uploadInvoice(index, downloadPdf = false) {
-        const invoiceData = globalData[index];
-        const biloopBadge = document.getElementById(`biloop-status-${index}`);
-        const btn = document.getElementById(`btn-${index}`);
+    async function uploadInvoice(rowIdx, downloadPdf = false) {
+        const invoiceData = globalData.find(inv => inv._sheet_row_index === rowIdx);
+        if (!invoiceData) {
+            console.error("No data found for rowIdx:", rowIdx);
+            return { success: false, message: "Error local: No se encontró la fila." };
+        }
+
+        const biloopBadge = document.getElementById(`biloop-status-${rowIdx}`);
+        const btn = document.getElementById(`btn-${rowIdx}`);
         
         if (biloopBadge) {
             biloopBadge.className = 'status-badge';
             biloopBadge.innerText = 'Subiendo...';
         }
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
         
         try {
-            const reqBody = { ...invoiceData, downloadPdf };
+            // Note: The /api/upload endpoint expects { invoice: {...}, downloadPdf: bool }
+            const reqBody = { invoice: invoiceData, downloadPdf };
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2695,30 +2701,32 @@
                     biloopBadge.className = 'status-badge success';
                     biloopBadge.innerText = 'Subido ✓';
                 }
-                btn.innerText = 'Hecho';
+                if (btn) btn.innerText = 'Hecho';
                 return result;
             } else {
                 if (biloopBadge) {
                     biloopBadge.className = 'status-badge error';
                     biloopBadge.innerText = 'Error ✗';
                 }
-                btn.disabled = false;
-                btn.innerText = 'Reintentar';
-                return result || { success: false, message: 'No response from server' };
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Reintentar';
+                }
+                return result || { success: false, message: 'No se recibió respuesta del servidor' };
             }
         } catch (error) {
             if (biloopBadge) {
                 biloopBadge.className = 'status-badge error';
                 biloopBadge.innerText = 'Error ✗';
             }
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
             return null;
         }
     }
 
-    function uploadSingle(index) {
+    function uploadSingle(rowIdx) {
         if (!confirm('¿Estás seguro de que quieres enviar esta factura a Biloop?')) return;
-        uploadInvoice(index);
+        uploadInvoice(rowIdx);
     }
 
     async function deleteSelectedInvoices(context) {
@@ -2781,16 +2789,18 @@
         }
     }
 
-    async function saveAndDownloadInvoice(index) {
+    async function saveAndDownloadInvoice(rowIdx) {
         if (!confirm('¿Estás seguro de que quieres guardar y descargar esta factura de Biloop?')) return;
-        const btnSave = document.getElementById(`btn-save-${index}`);
-        const originalText = btnSave.innerHTML;
-        btnSave.disabled = true;
-        btnSave.innerHTML = 'Guardando...';
+        const btnSave = document.getElementById(`btn-save-${rowIdx}`);
+        const originalText = btnSave ? btnSave.innerHTML : 'PDF';
+        if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.innerHTML = 'Guardando...';
+        }
 
         try {
             // 1. Send data to Biloop with downloadPdf flag = true
-            const result = await uploadInvoice(index, true);
+            const result = await uploadInvoice(rowIdx, true);
             console.info("[Biloop] Resultado:", result);
 
             // 2. Download invoice if successful and pdf is present
@@ -2838,8 +2848,10 @@
             showToast("Error inesperado en saveAndDownloadInvoice.", "error");
         }
 
-        btnSave.innerHTML = originalText;
-        btnSave.disabled = false;
+        if (btnSave) {
+            btnSave.innerHTML = originalText;
+            btnSave.disabled = false;
+        }
     }
 
     async function uploadSelected() {
@@ -2859,16 +2871,18 @@
         uploadBtn.innerHTML = 'Subiendo...';
         
         for (let i = 0; i < checkboxes.length; i++) {
-            const index = checkboxes[i].value;
-            await uploadInvoice(index);
-            if(document.getElementById(`status-${index}`).className.includes('success')) {
+            const rowIdx = parseInt(checkboxes[i].value);
+            await uploadInvoice(rowIdx);
+            
+            const badge = document.getElementById(`biloop-status-${rowIdx}`);
+            if (badge && badge.className.includes('success')) {
                 checkboxes[i].checked = false;
             }
         }
         
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalText;
-        document.getElementById('selectAll').checked = false;
+        checkSelection();
     }
 
     // ===== Margin Management Logic =====
