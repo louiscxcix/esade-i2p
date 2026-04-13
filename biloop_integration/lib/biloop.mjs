@@ -422,22 +422,27 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     };
   }
 
-  // ── 8. Look up the internal id if we still don't have it ─────────────────────────
+  // ── 8. Look up the internal id if we still don't have it (with retries) ─────────────────────────
   if (!invoiceId) {
-    console.log('[Biloop] No internal id yet — waiting 4s then querying by a3_reference…');
-    await new Promise(r => setTimeout(r, 4000));
+    for (let lookupAttempt = 1; lookupAttempt <= 4 && !invoiceId; lookupAttempt++) {
+      console.log(`[Biloop] ID lookup attempt ${lookupAttempt}/4 — waiting 5s…`);
+      await new Promise(r => setTimeout(r, 5000));
 
-    const getRes = await fetch(
-      `${BILOOP_BASE_URL}/erp/incomes/invoices/getInvoices?company_id=${COMPANY_ID}&a3_reference=${encodeURIComponent(a3Ref)}`,
-      { method: 'GET', headers: { token, SUBSCRIPTION_KEY } }
-    );
-    if (getRes.ok) {
-      const getData = await getRes.json();
-      console.log('[Biloop] GET invoice result:', JSON.stringify(getData).slice(0, 600));
-      const items = getData.data || getData.IncomeInvoices || (Array.isArray(getData) ? getData : []);
-      if (items.length > 0) {
-        invoiceId = items[0].id || null;
-        console.log(`[Biloop] internal id from GET: ${invoiceId}`);
+      try {
+        const getRes = await fetch(
+          `${BILOOP_BASE_URL}/erp/incomes/invoices/getInvoices?company_id=${COMPANY_ID}&a3_reference=${encodeURIComponent(a3Ref)}`,
+          { method: 'GET', headers: { token, SUBSCRIPTION_KEY } }
+        );
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          const items = getData.data || getData.IncomeInvoices || (Array.isArray(getData) ? getData : []);
+          if (items.length > 0) {
+            invoiceId = items[0].id || null;
+            console.log(`[Biloop] Found internal id on attempt ${lookupAttempt}: ${invoiceId}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Biloop] ID lookup attempt ${lookupAttempt} failed: ${e.message}`);
       }
     }
   }

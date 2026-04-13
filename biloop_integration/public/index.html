@@ -2795,23 +2795,35 @@
             // 2. Download invoice if successful and pdf is present
             if (result && result.success) {
                 if (result.pdfBase64) {
-                    const binaryStr = atob(result.pdfBase64);
-                    const len = binaryStr.length;
-                    const bytes = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) {
-                        bytes[i] = binaryStr.charCodeAt(i);
+                    try {
+                        // Remove any potential whitespace from base64
+                        const b64 = result.pdfBase64.replace(/\s/g, '');
+                        const binaryStr = atob(b64);
+                        const len = binaryStr.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryStr.charCodeAt(i);
+                        }
+                        const blob = new Blob([bytes], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = result.fileName || "Factura.pdf";
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // Wait longer before revoking
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        }, 1000);
+                        
+                        showToast("Factura descargada con éxito.", "success");
+                    } catch (err) {
+                        console.error("PDF Decode Error:", err);
+                        showToast("Error al procesar el archivo PDF.", "error");
                     }
-                    const blob = new Blob([bytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = result.fileName || `Factura_${globalData[index].Cliente}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(url), 100);
-                    showToast("Factura descargada con éxito.", "success");
                 } else {
                     const msg = result.message || "La factura se envió, pero Biloop no devolvió un PDF.";
                     showToast(msg, "warning");
