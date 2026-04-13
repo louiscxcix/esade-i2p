@@ -87,8 +87,8 @@ function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
   const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
   const resolved  = (resolvedClientName || '').toUpperCase();
 
-  // Add salt 'V2' to bypass cached records with old IDs
-  const base = `V2|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
+  // Add salt 'V3' to bypass cached records and broken auto-matches
+  const base = `V3|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
 
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
@@ -293,10 +293,10 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip numeric invoice-number prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  // ── 2. Disable all fuzzy matching to prevent Biloop from auto-merging clients ──────────────────────────────────────────────
+  // ── 2. Disable matching & Inject Invisible Salt ──────────────────────────────────────────────
   const resolvedNif     = null; // Force virtual NIF generation
-  const resolvedAddress = null; // Send no address to starve Biloop's auto-matcher
-  const resolvedName    = clientName;
+  const resolvedAddress = " ";  // FORCED BLANK: Overwrites Biloop's auto-filled address
+  const resolvedName    = clientName + "\u200B"; // INVISIBLE SALT: Breaks Biloop's name-matching algorithm
 
   console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
 
