@@ -293,13 +293,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip numeric invoice-number prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  // ── 2. Fetch full client info ──────────────────────────────────────────────
-  const clientInfo = await getClientInfo(clientName, token);
-  const resolvedNif     = clientInfo.nif    || null;
-  const resolvedAddress = clientInfo.address || null;
-  
-  // CRITICAL FIX: NEVER selectively overwrite what the user typed in the Google Sheet. 
-  // Biloop must use the exact name provided in the Sheet on the printed PDF.
+  // ── 2. Disable all fuzzy matching to prevent Biloop from auto-merging clients ──────────────────────────────────────────────
+  const resolvedNif     = null; // Force virtual NIF generation
+  const resolvedAddress = null; // Send no address to starve Biloop's auto-matcher
   const resolvedName    = clientName;
 
   console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
