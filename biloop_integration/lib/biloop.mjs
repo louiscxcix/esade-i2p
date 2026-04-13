@@ -405,7 +405,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       payload.master_nif = `Z${Math.abs(nameHash).toString(36).toUpperCase().padStart(8, '0')}`;
       console.log(`[Biloop] No NIF found. Generated unique virtual NIF: ${payload.master_nif} for "${resolvedName}"`);
     }
-    if (resolvedAddress) payload.address = resolvedAddress;
+    payload.address = " "; // Blank address fallback
 
     console.log('[Biloop] POST payload:', JSON.stringify(payload, null, 2));
 
