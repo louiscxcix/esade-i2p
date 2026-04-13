@@ -87,8 +87,8 @@ function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
   const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
   const resolved  = (resolvedClientName || '').toUpperCase();
 
-  // Add salt 'V4' to bypass cached records and broken auto-matches
-  const base = `V4|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
+  // Add salt 'V2' to bypass cached records with old IDs
+  const base = `V2|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
 
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
@@ -293,21 +293,12 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip numeric invoice-number prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  // ── 2. Disable matching & Inject Invisible Salt ──────────────────────────────────────────────
+  // ── 2. Disable all fuzzy matching to prevent Biloop from auto-merging clients ──────────────────────────────────────────────
   const resolvedNif     = null; // Force virtual NIF generation
+  const resolvedAddress = null; // Send no address to starve Biloop's auto-matcher
+  const resolvedName    = clientName;
 
-  // MIDDLE-NAME INJECTION: Putting the invisible character in the middle makes it harder to filter out.
-  let resolvedName = clientName;
-  if (clientName.includes(' ')) {
-    const parts = clientName.split(' ');
-    const mid = Math.floor(parts.length / 2);
-    parts[mid] = parts[mid] + "\u200B"; 
-    resolvedName = parts.join(' ');
-  } else {
-    resolvedName = clientName + "\u200B";
-  }
-
-  console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}"`);
+  console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
 
   // ── 3. Stable invoice reference ────────────────────────────────────────────
   const a3Ref = deriveStableInvoiceId(invoiceJson, resolvedName);
@@ -324,9 +315,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // ── 5. Core financials ─────────────────────────────────────────────────────
   const baseAmt    = parseFloat(invoiceJson['Importe factura'] || invoiceJson['Net Invoice Amount'] || invoiceJson['Invoice Amount'] || 0);
   const vatAmt     = parseFloat(invoiceJson['IVA'] || invoiceJson['IVA / VAT'] || 0);
-  
-  // LOCKDOWN: Recalculate total strictly from lines to prevent dirty "Cobro" columns (like 4332) from overriding the PDF amount.
-  const totalAmt   = baseAmt + vatAmt;
+  const totalAmt   = parseFloat(invoiceJson['Importe Cobro'] || invoiceJson['Gross Invoice Amount'] || (baseAmt + vatAmt) || 0);
   const dateStr    = formatBiloopDate(invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date']);
   const dueDateStr = formatBiloopDate(invoiceJson['Due Date'] || invoiceJson['Due Date.1'] || invoiceJson['Estimated Payment Date']);
 
@@ -367,15 +356,6 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       ordinary_vat_total:  vatAmt,
       vat_total:           vatAmt,
       total:               totalAmt,
-
-      // ADDRESS BLANKING: STOP Biloop from matching this client to its internal CRM records via address/contact.
-      master_address:      " ",
-      master_zip_code:     " ",
-      master_city:         " ",
-      master_province:     " ",
-      master_country:      " ",
-      master_phone:        " ",
-      master_email:        " ",
       ERP_line: [
         {
           company_id:      COMPANY_ID,
@@ -405,7 +385,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       payload.master_nif = `Z${Math.abs(nameHash).toString(36).toUpperCase().padStart(8, '0')}`;
       console.log(`[Biloop] No NIF found. Generated unique virtual NIF: ${payload.master_nif} for "${resolvedName}"`);
     }
-    payload.address = " "; // Blank address fallback
+    if (resolvedAddress) payload.address = resolvedAddress;
 
     console.log('[Biloop] POST payload:', JSON.stringify(payload, null, 2));
 
