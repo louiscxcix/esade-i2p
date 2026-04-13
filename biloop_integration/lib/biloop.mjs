@@ -110,14 +110,24 @@ async function getClientInfo(clientName, token) {
 
   const scoreMatch = (dbName) => {
     const dbNorm = normalize(dbName);
+    if (!dbNorm || !nameNorm) return 0;
     if (dbNorm === nameNorm) return 100;
-    if (dbNorm.startsWith(nameNorm) || nameNorm.startsWith(dbNorm)) return 80;
-    if (dbNorm.includes(nameNorm) || nameNorm.includes(dbNorm)) return 60;
-    // word-level overlap
-    const qWords = nameNorm.split(' ');
-    const dWords = dbNorm.split(' ');
-    const overlap = qWords.filter(w => w.length > 2 && dWords.includes(w)).length;
-    if (overlap > 0) return overlap * 10;
+    
+    // Strict startsWith only if names are reasonably long
+    if ((dbNorm.startsWith(nameNorm) || nameNorm.startsWith(dbNorm)) && nameNorm.length > 5) return 80;
+
+    const qWords = nameNorm.split(' ').filter(w => w.length > 2);
+    const dWords = dbNorm.split(' ').filter(w => w.length > 2);
+    
+    if (qWords.length > 0 && dWords.length > 0) {
+        const overlap = qWords.filter(w => dWords.includes(w)).length;
+        // Calculate percentage of matching words
+        const overlapPct = (overlap / Math.max(qWords.length, 1)) * 100;
+        if (overlapPct >= 66) return overlapPct; // At least 66% of typed words must match
+    }
+
+    if (nameNorm.length > 5 && (dbNorm.includes(nameNorm) || nameNorm.includes(dbNorm))) return 60;
+    
     return 0;
   };
 
