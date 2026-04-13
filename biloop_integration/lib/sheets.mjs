@@ -346,31 +346,17 @@ export async function createNewInvoice(invoiceData) {
     range: `${WORKSHEET_NAME}!A4:AJ4`,
   });
 
-  const headers = (headerResponse.data.values && headerResponse.data.values[0])
-    ? headerResponse.data.values[0].map(h => String(h).trim())
-    : [];
-
-  const idIdx     = findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : 2; // C is 2
-  const clientIdx = findIdx(headers, ['cliente']) !== -1 ? findIdx(headers, ['cliente']) : (findIdx(headers, ['razón social']) !== -1 ? findIdx(headers, ['razón social']) : 3); // D is 3
-  const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : (findIdx(headers, ['posición']) !== -1 ? findIdx(headers, ['posición']) : 4); // E is 4
-  const candIdx   = findIdx(headers, ['candidato']) !== -1 ? findIdx(headers, ['candidato']) : 6; // G is 6
-  const dateIdx   = findIdx(headers, ['fecha', 'factura']) !== -1 ? findIdx(headers, ['fecha', 'factura']) : 11; // L is 11
-  const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : 13; // N is 13
-  const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'est', 'pago']) : 20; // U is 20
-  const statusIdx = findIdx(headers, ['estado']) !== -1 ? findIdx(headers, ['estado']) : 19; // T is 19
+  const idIdx     = 2;  // Col C
+  const clientIdx = 3;  // Col D
+  const procIdx   = 4;  // Col E
+  const candIdx   = 6;  // Col G
+  const dateIdx   = 11; // Col L
+  const amtIdx    = 13; // Col N
+  const statusIdx = 19; // Col T
+  const estPayIdx = 20; // Col U
 
 
-  // Determine column letter for ID to get max ID
-  const colIndexToLetter = (idx) => {
-    let letter = '';
-    let curr = idx;
-    while (curr >= 0) {
-      letter = String.fromCharCode(65 + (curr % 26)) + letter;
-      curr = Math.floor(curr / 26) - 1;
-    }
-    return letter;
-  };
-  const idColLetter = idIdx !== -1 ? colIndexToLetter(idIdx) : 'C';
+  const idColLetter = 'C';
 
   // Get existing ID Factura 
   const idResponse = await sheets.spreadsheets.values.get({
@@ -389,18 +375,19 @@ export async function createNewInvoice(invoiceData) {
   }
   const nextId = `INV-${String(maxNum + 1).padStart(4, '0')}`;
 
-  // Build a row matching the headers length (at least 36 to AJ)
-  const newRow = new Array(Math.max(headers.length, 36)).fill('');
+  // Build a row representing A through V (22 columns, max index 21)
+  // Ensure we at least allocate enough to reach AJ (index 35) to prevent misalignments
+  const newRow = new Array(36).fill('');
   
-  // Assign fields using determined indices
-  if (idIdx !== -1) newRow[idIdx] = nextId; 
-  if (clientIdx !== -1) newRow[clientIdx] = invoiceData.client_name || ''; 
-  if (procIdx !== -1) newRow[procIdx] = invoiceData.position || ''; 
-  if (candIdx !== -1) newRow[candIdx] = invoiceData.candidate_name || ''; 
-  if (dateIdx !== -1) newRow[dateIdx] = invoiceData.invoice_date || ''; 
-  if (estPayIdx !== -1) newRow[estPayIdx] = invoiceData.est_payment_date || ''; 
-  if (amtIdx !== -1) newRow[amtIdx] = invoiceData.amount || ''; 
-  if (statusIdx !== -1) newRow[statusIdx] = invoiceData.status || 'Pendiente';
+  // Assign fields using exact hardcoded indices provided by the user
+  newRow[idIdx] = nextId;                                  // Index 2 (Col C)
+  newRow[clientIdx] = invoiceData.client_name || '';       // Index 3 (Col D)
+  newRow[procIdx] = invoiceData.position || '';            // Index 4 (Col E)
+  newRow[candIdx] = invoiceData.candidate_name || '';      // Index 6 (Col G)
+  newRow[dateIdx] = invoiceData.invoice_date || '';        // Index 11 (Col L)
+  newRow[amtIdx] = invoiceData.amount || '';               // Index 13 (Col N) -> Raw string untouched
+  newRow[statusIdx] = invoiceData.status || 'Pendiente';   // Index 19 (Col T)
+  newRow[estPayIdx] = invoiceData.est_payment_date || '';  // Index 20 (Col U)
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
