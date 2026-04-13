@@ -435,6 +435,7 @@ export async function deleteInvoices(rowIndices) {
     deleteDimension: {
       range: {
         sheetId: parseInt(GID),
+        dimension: 'ROWS',
         startIndex: ri - 1, // 0-indexed
         endIndex: ri,
       }
