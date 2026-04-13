@@ -80,24 +80,35 @@ function formatBiloopDate(d) {
  * Different data (e.g. changed date) → different ID → Biloop creates a new invoice.
  */
 function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
-  const rowId     = (invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || '').trim();
-  const client    = (invoiceJson['Cliente'] || invoiceJson['Client Name'] || '').trim().toUpperCase();
-  const date      = (invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date'] || '').trim();
-  const amount    = String(parseFloat(invoiceJson['Importe factura'] || invoiceJson['Invoice Amount'] || 0));
-  const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
-  const resolved  = (resolvedClientName || '').toUpperCase();
-
-  // Add salt 'V2' to bypass cached records with old IDs
-  const base = `V2|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
-
-  let hash = 5381;
+  const rowId = invoiceJson._sheet_row_index || 'new';
+  const client = (resolvedClientName || 'unknown').replace(/\s+/g, '').toLowerCase().slice(0, 10);
+  const date = (invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date'] || 'no-date').replace(/\//g, '');
+  const amount = (invoiceJson['Importe factura'] || invoiceJson['Invoice Amount'] || '0').toString().replace(/[^\d]/g, '');
+  const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').replace(/\s+/g, '').toLowerCase().slice(0, 5);
+  
+  // Hash the combination to get a unique but short ID
+  const resolved = (resolvedClientName || '').slice(0, 3).toUpperCase();
+  const base = `V3|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
+  
+  let hash = 0;
   for (let i = 0; i < base.length; i++) {
-    hash = ((hash << 5) + hash) + base.charCodeAt(i);
-    hash = hash & 0x7fffffff;
+    hash = ((hash << 5) - hash) + base.charCodeAt(i);
+    hash |= 0;
   }
-  const id = `BLOOP-${hash.toString(36).toUpperCase()}`;
+  
+  const id = `BLOOP-${Math.abs(hash).toString(36).toUpperCase()}`;
   console.log(`[Biloop] Stable a3_reference: ${id}  (base: "${base}")`);
   return id;
+}
+
+/**
+ * Handle known client name variations to ensure they match canonical records.
+ */
+function getCanonicalClientName(name) {
+  const n = name.toLowerCase();
+  if (n.includes('mc recruiting')) return 'MC HEADHUNTING, S.L.';
+  if (n.includes('mc headhunting')) return 'MC HEADHUNTING, S.L.';
+  return name;
 }
 
 /**
@@ -139,8 +150,8 @@ async function getClientInfo(clientName, token) {
       const score = scoreMatch(getName(c));
       if (score > bestScore) { bestScore = score; best = c; }
     }
-    if (bestScore >= 60) {
-      console.log(`[Biloop] Matched customer "${getName(best)}" (score ${bestScore}) for query "${clientName}"`);
+    if (bestScore >= 85) {
+      console.log(`[Biloop] Confident match for "${getName(best)}" (score ${bestScore}) for query "${clientName}"`);
       return best;
     }
     return null;
@@ -293,12 +304,14 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // Strip numeric invoice-number prefixes like "20260408-171 " or "171 "
   clientName = clientName.replace(/^(\d{8}-\d{1,4}|\d{1,4})\s+/, '').trim();
 
-  // ── 2. Disable all fuzzy matching to prevent Biloop from auto-merging clients ──────────────────────────────────────────────
-  const resolvedNif     = null; // Force virtual NIF generation
-  const resolvedAddress = null; // Send no address to starve Biloop's auto-matcher
-  const resolvedName    = clientName;
+  // ── 2. Restore fuzzy matching but with high threshold ───────────────────────
+  const canonicalName = getCanonicalClientName(clientName);
+  const resolved      = await getClientInfo(canonicalName, token);
+  const resolvedNif     = resolved.nif || null; 
+  const resolvedAddress = resolved.address || null;
+  const resolvedName    = resolved.canonicalName || canonicalName;
 
-  console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
+  console.log(`[Biloop] Client: "${clientName}" → canonical="${canonicalName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
 
   // ── 3. Stable invoice reference ────────────────────────────────────────────
   const a3Ref = deriveStableInvoiceId(invoiceJson, resolvedName);
@@ -375,16 +388,17 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     if (resolvedNif) {
       payload.master_nif = resolvedNif;
     } else {
-      // GENERATE UNIQUE VIRTUAL NIF: 
-      // Shared dummy NIFs like '00000000T' cause Biloop to override names with its own DB record.
-      // We generate a deterministic alphanumeric ID based on the client name.
+      // GENERATE UNIQUE VIRTUAL NIF V3 (to break poisoned associations with 'Hospital Clinic')
+      // We add a 'salt' character to the hashing base to ensure and ZV3 prefix.
+      const salt = 'V3-SALT';
+      const hashBase = resolvedName + salt;
       let nameHash = 0;
-      for (let i = 0; i < resolvedName.length; i++) {
-        nameHash = ((nameHash << 5) - nameHash) + resolvedName.charCodeAt(i);
+      for (let i = 0; i < hashBase.length; i++) {
+        nameHash = ((nameHash << 5) - nameHash) + hashBase.charCodeAt(i);
         nameHash |= 0;
       }
-      payload.master_nif = `Z${Math.abs(nameHash).toString(36).toUpperCase().padStart(8, '0')}`;
-      console.log(`[Biloop] No NIF found. Generated unique virtual NIF: ${payload.master_nif} for "${resolvedName}"`);
+      payload.master_nif = `ZV3${Math.abs(nameHash).toString(36).toUpperCase().padStart(8, '0')}`;
+      console.log(`[Biloop] No NIF found. Generated unique virtual NIF (V3): ${payload.master_nif} for "${resolvedName}"`);
     }
     if (resolvedAddress) payload.address = resolvedAddress;
 

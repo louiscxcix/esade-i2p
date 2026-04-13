@@ -9,17 +9,26 @@ const WORKSHEET_NAME = 'Datos en bruto';
 
 // --- Helpers ---
 
-/** Find index by header keywords (case-insensitive) with word-boundary awareness for ID */
+/** Find index by header keywords with prioritization for exact matches */
 function findIdx(headers, keywords) {
+  const lowerKeywords = keywords.map(k => k.toLowerCase());
+  
+  // 1. Try exact match first
+  const exact = headers.findIndex(h => {
+    const lowerH = (h || '').toLowerCase().trim();
+    return lowerKeywords.some(k => lowerH === k);
+  });
+  if (exact !== -1) return exact;
+
+  // 2. Try word match or combined fragments
   return headers.findIndex(h => {
     const lowerH = (h || '').toLowerCase().trim();
-    return keywords.every(k => {
-      const lowerK = k.toLowerCase();
-      if (lowerK === 'id') {
-        // Match "id" as a word/start/end, not inside "candidato"
+    return lowerKeywords.every(k => {
+      // Logic for "id" to avoid partial matches (like "candidato")
+      if (k === 'id') {
         return lowerH === 'id' || lowerH.startsWith('id ') || lowerH.endsWith(' id') || lowerH.includes(' id ');
       }
-      return lowerH.includes(lowerK);
+      return lowerH.includes(k);
     });
   });
 }
@@ -112,9 +121,9 @@ export async function fetchInvoiceData() {
     const dateIdx   = findIdx(headers, ['fecha', 'factura']) !== -1 ? findIdx(headers, ['fecha', 'factura']) : 11; // L is 11
     const statusIdx = findIdx(headers, ['estado']) !== -1 ? findIdx(headers, ['estado']) : 19; // T is 19
     const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'est', 'pago']) : 20; // U is 20
-    const payIdx    = findIdx(headers, ['fecha', 'cobro']) !== -1 ? findIdx(headers, ['fecha', 'cobro']) : 21; // V is 21
+    const payIdx    = findIdx(headers, ['fecha', 'pago']) !== -1 ? findIdx(headers, ['fecha', 'pago']) : (findIdx(headers, ['fecha', 'cobro']) !== -1 ? findIdx(headers, ['fecha', 'cobro']) : 21); // V is 21
     const feeIdx    = findIdx(headers, ['fee', '%']);
-    const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : 13; // N is 13
+    const amtIdx    = findIdx(headers, ['importe']) !== -1 ? findIdx(headers, ['importe']) : (findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : 13); // N is 13
     const salIdx    = findIdx(headers, ['salario', 'fijo']);
     const ivaIdx    = findIdx(headers, ['iva']);
     const brutoIdx  = findIdx(headers, ['factura', 'bruto']) !== -1 ? findIdx(headers, ['factura', 'bruto']) : findIdx(headers, ['importe', 'cobro']);
@@ -124,6 +133,14 @@ export async function fetchInvoiceData() {
     const dueIdx    = findIdx(headers, ['vencimiento']);
     const recruiterIdx = findIdx(headers, ['recruiter']);
     const discountIdx = findIdx(headers, ['descuento', '%']);
+    
+    console.log(`[Sheets] Mappings found:`, {
+        client: headers[clientIdx] || `index ${clientIdx}`,
+        cand:   headers[candIdx] || `index ${candIdx}`,
+        proc:   headers[procIdx] || `index ${procIdx}`,
+        amt:    headers[amtIdx] || `index ${amtIdx}`,
+        status: headers[statusIdx] || `index ${statusIdx}`
+    });
 
     dataRows.forEach((rowCells, i) => {
         const idVal = rowCells[idIdx] || '';
