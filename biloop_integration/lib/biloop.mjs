@@ -79,14 +79,15 @@ function formatBiloopDate(d) {
  * Derive a stable internal invoice ID.
  * Different data (e.g. changed date) → different ID → Biloop creates a new invoice.
  */
-function deriveStableInvoiceId(invoiceJson) {
+function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
   const rowId     = (invoiceJson['ID Factura Dinámica'] || invoiceJson['Invoice ID'] || '').trim();
   const client    = (invoiceJson['Cliente'] || invoiceJson['Client Name'] || '').trim().toUpperCase();
   const date      = (invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date'] || '').trim();
   const amount    = String(parseFloat(invoiceJson['Importe factura'] || invoiceJson['Invoice Amount'] || 0));
   const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
+  const resolved  = (resolvedClientName || '').toUpperCase();
 
-  const base = `${rowId}|${client}|${date}|${amount}|${candidate}`;
+  const base = `${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
 
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
@@ -300,7 +301,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
 
   // ── 3. Stable invoice reference ────────────────────────────────────────────
-  const a3Ref = deriveStableInvoiceId(invoiceJson);
+  const a3Ref = deriveStableInvoiceId(invoiceJson, resolvedName);
 
   // ── 4. Check idempotency ───────────────────────────────────────────────────
   const existing = await findExistingInvoice(a3Ref, token);
