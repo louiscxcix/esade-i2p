@@ -87,8 +87,8 @@ function deriveStableInvoiceId(invoiceJson, resolvedClientName) {
   const candidate = (invoiceJson['Candidato'] || invoiceJson['Candidate Name'] || '').trim().toUpperCase();
   const resolved  = (resolvedClientName || '').toUpperCase();
 
-  // Add salt 'V3' to bypass cached records and broken auto-matches
-  const base = `V3|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
+  // Add salt 'V4' to bypass cached records and broken auto-matches
+  const base = `V4|${rowId}|${client}|${date}|${amount}|${candidate}|${resolved}`;
 
   let hash = 5381;
   for (let i = 0; i < base.length; i++) {
@@ -295,10 +295,19 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
 
   // ── 2. Disable matching & Inject Invisible Salt ──────────────────────────────────────────────
   const resolvedNif     = null; // Force virtual NIF generation
-  const resolvedAddress = " ";  // FORCED BLANK: Overwrites Biloop's auto-filled address
-  const resolvedName    = clientName + "\u200B"; // INVISIBLE SALT: Breaks Biloop's name-matching algorithm
 
-  console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}" NIF=${resolvedNif}`);
+  // MIDDLE-NAME INJECTION: Putting the invisible character in the middle makes it harder to filter out.
+  let resolvedName = clientName;
+  if (clientName.includes(' ')) {
+    const parts = clientName.split(' ');
+    const mid = Math.floor(parts.length / 2);
+    parts[mid] = parts[mid] + "\u200B"; 
+    resolvedName = parts.join(' ');
+  } else {
+    resolvedName = clientName + "\u200B";
+  }
+
+  console.log(`[Biloop] Client: "${clientName}" → resolved="${resolvedName}"`);
 
   // ── 3. Stable invoice reference ────────────────────────────────────────────
   const a3Ref = deriveStableInvoiceId(invoiceJson, resolvedName);
@@ -315,7 +324,9 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   // ── 5. Core financials ─────────────────────────────────────────────────────
   const baseAmt    = parseFloat(invoiceJson['Importe factura'] || invoiceJson['Net Invoice Amount'] || invoiceJson['Invoice Amount'] || 0);
   const vatAmt     = parseFloat(invoiceJson['IVA'] || invoiceJson['IVA / VAT'] || 0);
-  const totalAmt   = parseFloat(invoiceJson['Importe Cobro'] || invoiceJson['Gross Invoice Amount'] || (baseAmt + vatAmt) || 0);
+  
+  // LOCKDOWN: Recalculate total strictly from lines to prevent dirty "Cobro" columns (like 4332) from overriding the PDF amount.
+  const totalAmt   = baseAmt + vatAmt;
   const dateStr    = formatBiloopDate(invoiceJson['Fecha Factura'] || invoiceJson['Invoice Date']);
   const dueDateStr = formatBiloopDate(invoiceJson['Due Date'] || invoiceJson['Due Date.1'] || invoiceJson['Estimated Payment Date']);
 
@@ -356,6 +367,15 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
       ordinary_vat_total:  vatAmt,
       vat_total:           vatAmt,
       total:               totalAmt,
+
+      // ADDRESS BLANKING: STOP Biloop from matching this client to its internal CRM records via address/contact.
+      master_address:      " ",
+      master_zip_code:     " ",
+      master_city:         " ",
+      master_province:     " ",
+      master_country:      " ",
+      master_phone:        " ",
+      master_email:        " ",
       ERP_line: [
         {
           company_id:      COMPANY_ID,
