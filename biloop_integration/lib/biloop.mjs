@@ -208,7 +208,12 @@ function extractInternalId(data) {
     item = item.PostIncomesInvoices[0];
   else if (item.data) {
     const rawData = item.data;
-    if (Array.isArray(rawData) && rawData.length > 0) item = rawData[0];
+    if (Array.isArray(rawData) && rawData.length > 0) {
+        item = rawData[0];
+        // Handle nested PostIncomesInvoices inside data[0]
+        if (item.PostIncomesInvoices && Array.isArray(item.PostIncomesInvoices) && item.PostIncomesInvoices.length > 0)
+            item = item.PostIncomesInvoices[0];
+    }
     else if (rawData.PostIncomesInvoices && Array.isArray(rawData.PostIncomesInvoices) && rawData.PostIncomesInvoices.length > 0)
       item = rawData.PostIncomesInvoices[0];
     else if (rawData.IncomeInvoices && Array.isArray(rawData.IncomeInvoices) && rawData.IncomeInvoices.length > 0)
@@ -221,8 +226,8 @@ function extractInternalId(data) {
     item = item[0];
 
   // Try multiple ID fields
-  const id = item.id || item.document_id || item.header_id || null;
-  console.log(`[Biloop] extractInternalId: found id=${id} (from keys: ${Object.keys(item).join(',')})`);
+  const id = item.id || item.document_id || item.header_id || (item.data && typeof item.data === 'number' ? item.data : null);
+  console.log(`[Biloop] extractInternalId: found id=${id}`);
   return id;
 }
 
@@ -254,32 +259,27 @@ async function findExistingInvoice(a3Ref, token) {
  */
 async function fetchPdf(invoiceId, token) {
   const headers = { token, SUBSCRIPTION_KEY };
-  console.log(`[Biloop] Fetching PDF for internal id=${invoiceId}`);
+  console.log(`[Biloop] Buscando PDF para ID interno=${invoiceId}`);
 
-  // Retry up to 5 times with 3s delay (Biloop may need a moment to finalise)
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    console.log(`[Biloop] PDF attempt ${attempt}/5`);
+  // Reduced attempts and delays to fit Netlify timeout (10s)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    console.log(`[Biloop] Intento de PDF ${attempt}/3`);
     try {
       const url = `${BILOOP_BASE_URL}/erp/pendingDocuments/pendingBinary/getPendingBinary` +
         `?document_id=${encodeURIComponent(invoiceId)}&document_type=FV&company_id=${COMPANY_ID}`;
       const res = await fetch(url, { method: 'GET', headers });
-      const ct = res.headers.get('content-type') || '';
-      console.log(`[Biloop]   status=${res.status} content-type="${ct}"`);
-
+      
       const buf = await res.arrayBuffer();
       const bytes = new Uint8Array(buf);
-      // Check PDF magic bytes %PDF
       if (bytes.length > 100 && bytes[0]===0x25 && bytes[1]===0x50 && bytes[2]===0x44 && bytes[3]===0x46) {
-        console.log(`[Biloop] ✓ Valid PDF: ${bytes.length} bytes`);
+        console.log(`[Biloop] ✓ PDF Válido: ${bytes.length} bytes`);
         return Buffer.from(buf).toString('base64');
       }
-      const text = new TextDecoder().decode(bytes.slice(0, 300));
-      console.warn(`[Biloop]   Not a PDF: ${text}`);
     } catch (e) {
-      console.warn(`[Biloop]   Exception: ${e.message}`);
+      console.warn(`[Biloop] Error en intento ${attempt}: ${e.message}`);
     }
 
-    if (attempt < 5) await new Promise(r => setTimeout(r, 3000));
+    if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
   }
   return null;
 }
@@ -426,16 +426,16 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     return {
       success: true,
       message: existing
-        ? 'Invoice already in Biloop — no duplicate created.'
-        : 'Uploaded successfully to Biloop.',
+        ? 'La factura ya existe en Biloop - No se creó duplicado.'
+        : 'Factura subida con éxito a Biloop.',
     };
   }
 
-  // ── 8. Look up the internal id if we still don't have it (with retries) ─────────────────────────
+  // ── 8. Look up the internal id if we still don't have it (optimized retries) ─────────────────────────
   if (!invoiceId) {
-    for (let lookupAttempt = 1; lookupAttempt <= 4 && !invoiceId; lookupAttempt++) {
-      console.log(`[Biloop] ID lookup attempt ${lookupAttempt}/4 — waiting 5s…`);
-      await new Promise(r => setTimeout(r, 5000));
+    for (let lookupAttempt = 1; lookupAttempt <= 2 && !invoiceId; lookupAttempt++) {
+      console.log(`[Biloop] Buscando ID, intento ${lookupAttempt}/2 — esperando 3s…`);
+      await new Promise(r => setTimeout(r, 3000));
 
       try {
         const getRes = await fetch(
@@ -447,20 +447,20 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
           const items = getData.data || getData.IncomeInvoices || (Array.isArray(getData) ? getData : []);
           if (items.length > 0) {
             invoiceId = items[0].id || null;
-            console.log(`[Biloop] Found internal id on attempt ${lookupAttempt}: ${invoiceId}`);
+            console.log(`[Biloop] ID encontrado en intento ${lookupAttempt}: ${invoiceId}`);
           }
         }
       } catch (e) {
-        console.warn(`[Biloop] ID lookup attempt ${lookupAttempt} failed: ${e.message}`);
+        console.warn(`[Biloop] Intento ${lookupAttempt} fallido: ${e.message}`);
       }
     }
   }
 
   if (!invoiceId) {
     return {
-      success: false, // Treat as failure if PDF requested but no ID found
+      success: false, 
       pdfBase64: null,
-      message: 'Invoice processed by Biloop but could not retrieve internal ID for PDF generation. Please check Biloop manually.',
+      message: 'Factura procesada pero no se pudo recuperar el ID interno para el PDF. Verifícalo en Biloop.',
     };
   }
 
@@ -471,7 +471,7 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     return {
       success: true,
       pdfBase64: null,
-      message: 'Invoice created in Biloop but PDF download failed after retries. Open Biloop to download manually.',
+      message: 'Factura creada en Biloop pero la descarga del PDF falló. Descárgalo manualmente en Biloop.',
     };
   }
 
@@ -479,8 +479,8 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
   return {
     success:   true,
     message:   existing
-      ? 'Existing invoice found — PDF retrieved.'
-      : 'Invoice created and PDF downloaded successfully.',
+      ? 'Factura existente - PDF recuperado.'
+      : 'Factura creada y PDF descargado con éxito.',
     pdfBase64,
     fileName:  `Factura_${safeName}_${dateStr}.pdf`,
   };

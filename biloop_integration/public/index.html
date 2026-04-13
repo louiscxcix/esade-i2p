@@ -2791,6 +2791,7 @@
         try {
             // 1. Send data to Biloop with downloadPdf flag = true
             const result = await uploadInvoice(index, true);
+            console.info("[Biloop] Resultado:", result);
 
             // 2. Download invoice if successful and pdf is present
             if (result && result.success) {
