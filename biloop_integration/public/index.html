@@ -2062,24 +2062,25 @@
             <input type="text" id="newCandidateName" placeholder="ej. Juan Pérez">
         </div>
         <div class="modal-field">
-            <label>Fecha Inicio</label>
-            <input type="date" id="newStartDate">
-        </div>
-        <div class="modal-field">
-            <label>Salario Fijo (€)</label>
-            <input type="number" id="newFixSalary" step="0.01" placeholder="ej. 50000">
-        </div>
-        <div class="modal-field">
             <label>Fecha Factura</label>
             <input type="date" id="newInvoiceDate">
         </div>
         <div class="modal-field">
-            <label>Tarifa %</label>
-            <input type="text" id="newFeePercent" placeholder="ej. 20%">
+            <label>Fecha Est. Pago</label>
+            <input type="date" id="newEstPaymentDate">
         </div>
         <div class="modal-field">
-            <label>Importe Factura (€)</label>
-            <input type="number" id="newInvoiceAmount" step="0.01" placeholder="ej. 10000">
+            <label>Importe (€)</label>
+            <input type="number" id="newAmount" step="0.01" placeholder="ej. 10000">
+        </div>
+        <div class="modal-field">
+            <label>Estado</label>
+            <select id="newStatus" class="status-select" style="width: 100%; border-radius: var(--r-sm); padding: 8px;">
+                <option value="Pendiente">Pendiente</option>
+                <option value="Cobrado">Cobrado</option>
+                <option value="Inminente">Inminente</option>
+                <option value="Vencido">Vencido</option>
+            </select>
         </div>
         <div class="modal-actions">
             <button class="btn-secondary" onclick="closeNewInvoiceModal()">Cancelar</button>
@@ -3096,8 +3097,9 @@
     function closeNewInvoiceModal() {
         document.getElementById('newInvoiceModal').classList.remove('active');
         // Clear fields
-        ['newClientName','newPosition','newCandidateName','newStartDate','newFixSalary','newInvoiceDate','newFeePercent','newInvoiceAmount'].forEach(id => {
-            document.getElementById(id).value = '';
+        ['newClientName','newPosition','newCandidateName','newInvoiceDate','newEstPaymentDate','newAmount','newStatus'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = (id === 'newStatus' ? 'Pendiente' : '');
         });
     }
 
@@ -3126,12 +3128,10 @@
             client_name: clientName,
             position: document.getElementById('newPosition').value.trim(),
             candidate_name: candidateName,
-            start_date: formatDate(document.getElementById('newStartDate').value),
-            fix_salary: document.getElementById('newFixSalary').value,
             invoice_date: formatDate(document.getElementById('newInvoiceDate').value),
-            fee_percent: document.getElementById('newFeePercent').value,
-            invoice_amount: document.getElementById('newInvoiceAmount').value,
-            status: 'Pending'
+            est_payment_date: formatDate(document.getElementById('newEstPaymentDate').value),
+            amount: document.getElementById('newAmount').value,
+            status: document.getElementById('newStatus').value
         };
         
         try {

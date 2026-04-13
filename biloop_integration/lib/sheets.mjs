@@ -7,6 +7,23 @@ const GID = '1209787837';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&id=${SHEET_ID}&gid=${GID}`;
 const WORKSHEET_NAME = 'Datos en bruto';
 
+// --- Helpers ---
+
+/** Find index by header keywords (case-insensitive) with word-boundary awareness for ID */
+function findIdx(headers, keywords) {
+  return headers.findIndex(h => {
+    const lowerH = (h || '').toLowerCase().trim();
+    return keywords.every(k => {
+      const lowerK = k.toLowerCase();
+      if (lowerK === 'id') {
+        // Match "id" as a word/start/end, not inside "candidato"
+        return lowerH === 'id' || lowerH.startsWith('id ') || lowerH.endsWith(' id') || lowerH.includes(' id ');
+      }
+      return lowerH.includes(lowerK);
+    });
+  });
+}
+
 // Column mapping for X-AJ (0-indexed from CSV: 23-35, 1-indexed for Sheets API: 24-36)
 const MARGIN_COLUMNS = [
   { key: 'Recruiter Name', csvIdx: 23, sheetCol: 24 },
@@ -73,33 +90,25 @@ export async function fetchInvoiceData() {
   const dataRows = rows.slice(1);
   const validRows = [];
 
-    // Helper to find index by header keywords (case-insensitive)
-    const findIdx = (keywords) => {
-        return headers.findIndex(h => {
-            const lowerH = (h || '').toLowerCase().trim();
-            return keywords.every(k => lowerH.includes(k.toLowerCase()));
-        });
-    };
-
-    const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
-    const clientIdx = findIdx(['cliente']);
-    const procIdx   = findIdx(['proceso']);
-    const candIdx   = findIdx(['candidato']);
-    const dateIdx   = findIdx(['fecha', 'factura']);
-    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
-    const estPayIdx = findIdx(['fecha', 'est', 'pago']) === -1 ? findIdx(['estimada', 'pago']) : findIdx(['fecha', 'est', 'pago']);
-    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
-    const feeIdx    = findIdx(['fee', '%']);
-    const amtIdx    = findIdx(['importe', 'factura']);
-    const salIdx    = findIdx(['salario', 'fijo']);
-    const ivaIdx    = findIdx(['iva']);
-    const brutoIdx  = findIdx(['factura', 'bruto']) !== -1 ? findIdx(['factura', 'bruto']) : findIdx(['importe', 'total']);
-    const varSalIdx = findIdx(['salario', 'variable']);
-    const equityIdx = findIdx(['participación', '%']) !== -1 ? findIdx(['participación', '%']) : findIdx(['equity']);
-    const startIdx  = findIdx(['fecha', 'inicio']);
-    const dueIdx    = findIdx(['vencimiento']);
-    const recruiterIdx = findIdx(['recruiter']);
-    const discountIdx = findIdx(['descuento', '%']);
+    const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
+    const clientIdx = findIdx(headers, ['cliente']);
+    const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : findIdx(headers, ['posición']);
+    const candIdx   = findIdx(headers, ['candidato']);
+    const dateIdx   = findIdx(headers, ['fecha', 'factura']);
+    const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
+    const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) === -1 ? findIdx(headers, ['estimada', 'pago']) : findIdx(headers, ['fecha', 'est', 'pago']);
+    const payIdx    = findIdx(headers, ['fecha', 'cobro']) === -1 ? findIdx(headers, ['fecha', 'pago']) : findIdx(headers, ['fecha', 'cobro']);
+    const feeIdx    = findIdx(headers, ['fee', '%']);
+    const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : findIdx(headers, ['importe', 'total']);
+    const salIdx    = findIdx(headers, ['salario', 'fijo']);
+    const ivaIdx    = findIdx(headers, ['iva']);
+    const brutoIdx  = findIdx(headers, ['factura', 'bruto']) !== -1 ? findIdx(headers, ['factura', 'bruto']) : findIdx(headers, ['importe', 'cobro']);
+    const varSalIdx = findIdx(headers, ['salario', 'variable']);
+    const equityIdx = findIdx(headers, ['participación', '%']) !== -1 ? findIdx(headers, ['participación', '%']) : findIdx(headers, ['equity']);
+    const startIdx  = findIdx(headers, ['fecha', 'inicio']);
+    const dueIdx    = findIdx(headers, ['vencimiento']);
+    const recruiterIdx = findIdx(headers, ['recruiter']);
+    const discountIdx = findIdx(headers, ['descuento', '%']);
 
     dataRows.forEach((rowCells, i) => {
         const idVal = rowCells[idIdx] || '';
@@ -162,19 +171,11 @@ export async function fetchMarginData() {
   const dataRows = rows.slice(1);
   const validRows = [];
 
-    // Helper to find index by header keywords (case-insensitive)
-    const findIdx = (keywords) => {
-        return headers.findIndex(h => {
-            const lowerH = (h || '').toLowerCase().trim();
-            return keywords.every(k => lowerH.includes(k.toLowerCase()));
-        });
-    };
-
-    const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
-    const clientIdx = findIdx(['cliente']);
-    const candIdx   = findIdx(['candidato']);
-    const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
-    const payIdx    = findIdx(['fecha', 'cobro']) === -1 ? findIdx(['fecha', 'pago']) : findIdx(['fecha', 'cobro']);
+    const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
+    const clientIdx = findIdx(headers, ['cliente']);
+    const candIdx   = findIdx(headers, ['candidato']);
+    const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
+    const payIdx    = findIdx(headers, ['fecha', 'cobro']) === -1 ? findIdx(headers, ['fecha', 'pago']) : findIdx(headers, ['fecha', 'cobro']);
 
     dataRows.forEach((cells, i) => {
         const idVal = cells[idIdx] || '';
@@ -349,23 +350,14 @@ export async function createNewInvoice(invoiceData) {
     ? headerResponse.data.values[0].map(h => String(h).trim())
     : [];
 
-  const findIdx = (keywords) => {
-    return headers.findIndex(h => {
-      const lowerH = (h || '').toLowerCase().trim();
-      return keywords.every(k => lowerH.includes(k.toLowerCase()));
-    });
-  };
-
-  const idIdx     = findIdx(['c175']) !== -1 ? findIdx(['c175']) : findIdx(['id', 'factura']);
-  const clientIdx = findIdx(['cliente']);
-  const procIdx   = findIdx(['proceso']);
-  const candIdx   = findIdx(['candidato']);
-  const startIdx  = findIdx(['fecha', 'inicio']);
-  const salIdx    = findIdx(['salario', 'fijo']);
-  const dateIdx   = findIdx(['fecha', 'factura']);
-  const feeIdx    = findIdx(['fee', '%']);
-  const amtIdx    = findIdx(['importe', 'factura']);
-  const statusIdx = findIdx(['estado']) === -1 ? findIdx(['status']) : findIdx(['estado']);
+  const idIdx     = findIdx(headers, ['c175']) !== -1 ? findIdx(headers, ['c175']) : (findIdx(headers, ['id', 'factura']) !== -1 ? findIdx(headers, ['id', 'factura']) : findIdx(headers, ['nº', 'factura']));
+  const clientIdx = findIdx(headers, ['cliente']);
+  const procIdx   = findIdx(headers, ['proceso']) !== -1 ? findIdx(headers, ['proceso']) : findIdx(headers, ['posición']);
+  const candIdx   = findIdx(headers, ['candidato']);
+  const dateIdx   = findIdx(headers, ['fecha', 'factura']);
+  const amtIdx    = findIdx(headers, ['importe', 'factura']) !== -1 ? findIdx(headers, ['importe', 'factura']) : (findIdx(headers, ['importe']) !== -1 ? findIdx(headers, ['importe']) : findIdx(headers, ['importe', 'total']));
+  const estPayIdx = findIdx(headers, ['fecha', 'est', 'pago']) === -1 ? findIdx(headers, ['estimada', 'pago']) : findIdx(headers, ['fecha', 'est', 'pago']);
+  const statusIdx = findIdx(headers, ['estado']) === -1 ? findIdx(headers, ['status']) : findIdx(headers, ['estado']);
 
   // Determine column letter for ID to get max ID
   const colIndexToLetter = (idx) => {
@@ -399,17 +391,21 @@ export async function createNewInvoice(invoiceData) {
   // Build a row matching the headers length (at least 36 to AJ)
   const newRow = new Array(Math.max(headers.length, 36)).fill('');
   
-  // Assign fields dynamically if columns exist, otherwise fallback
-  if (idIdx !== -1) newRow[idIdx] = nextId; else newRow[2] = nextId;
-  if (clientIdx !== -1) newRow[clientIdx] = invoiceData.client_name || ''; else newRow[3] = invoiceData.client_name || '';
-  if (procIdx !== -1) newRow[procIdx] = invoiceData.position || ''; else newRow[4] = invoiceData.position || '';
-  if (candIdx !== -1) newRow[candIdx] = invoiceData.candidate_name || ''; else newRow[6] = invoiceData.candidate_name || '';
-  if (startIdx !== -1) newRow[startIdx] = invoiceData.start_date || ''; else newRow[7] = invoiceData.start_date || '';
-  if (salIdx !== -1) newRow[salIdx] = invoiceData.fix_salary || ''; else newRow[8] = invoiceData.fix_salary || '';
-  if (dateIdx !== -1) newRow[dateIdx] = invoiceData.invoice_date || ''; else newRow[11] = invoiceData.invoice_date || '';
-  if (feeIdx !== -1) newRow[feeIdx] = invoiceData.fee_percent || ''; else newRow[12] = invoiceData.fee_percent || '';
-  if (amtIdx !== -1) newRow[amtIdx] = invoiceData.invoice_amount || ''; else newRow[13] = invoiceData.invoice_amount || '';
-  if (statusIdx !== -1) newRow[statusIdx] = invoiceData.status || 'Pending'; else newRow[19] = invoiceData.status || 'Pending';
+  // Assign fields dynamically if columns exist, otherwise fallback securely
+  if (idIdx !== -1) newRow[idIdx] = nextId; 
+  if (clientIdx !== -1) newRow[clientIdx] = invoiceData.client_name || ''; 
+  if (procIdx !== -1) newRow[procIdx] = invoiceData.position || ''; 
+  if (candIdx !== -1) newRow[candIdx] = invoiceData.candidate_name || ''; 
+  if (dateIdx !== -1) newRow[dateIdx] = invoiceData.invoice_date || ''; 
+  if (estPayIdx !== -1) newRow[estPayIdx] = invoiceData.est_payment_date || ''; 
+  if (amtIdx !== -1) newRow[amtIdx] = invoiceData.amount || ''; 
+  if (statusIdx !== -1) newRow[statusIdx] = invoiceData.status || 'Pendiente';
+
+  // Fallback defaults if columns weren't found (only if indices are empty)
+  if (idIdx === -1 && newRow[2] === '') newRow[2] = nextId; // Col C
+  if (clientIdx === -1 && newRow[3] === '') newRow[3] = invoiceData.client_name || ''; // Col D
+  if (procIdx === -1 && newRow[4] === '') newRow[4] = invoiceData.position || ''; // Col E
+  if (candIdx === -1 && newRow[6] === '') newRow[6] = invoiceData.candidate_name || ''; // Col G
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
