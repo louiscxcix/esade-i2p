@@ -406,8 +406,8 @@ export async function pushInvoiceToBiloop(invoiceJson, downloadPdf = false) {
     invoiceId = extractInternalId(result);
     console.log(`[Biloop] internal id from POST response: ${invoiceId}`);
 
-    if (!isActuallySuccess || !invoiceId) {
-      const errorMsg = msg || (invoiceId ? `Biloop rechazó la factura (HTTP ${postRes.status}).` : 'Fallo al extraer el ID interno, comprueba Biloop.');
+    if (!isActuallySuccess) {
+      const errorMsg = msg || `Biloop rechazó la factura (HTTP ${postRes.status}).`;
       console.error(`[Biloop] POST validation failed: ${errorMsg}`);
       return { success: false, message: errorMsg };
     }
