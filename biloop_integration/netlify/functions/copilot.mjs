@@ -28,11 +28,11 @@ export default async (req) => {
     ]);
 
     let context = 'Here is the current Invoice Data (Cleaned & Mapped):\n';
-    context += JSON.stringify(invoiceData.slice(0, 80), null, 2);
+    context += JSON.stringify(invoiceData, null, 2);
     
     context += '\n\nHere is the current Margin/Recruiter Data (Columns W-AH):\n';
     if (marginData && marginData.length > 0) {
-      context += JSON.stringify(marginData.slice(0, 50), null, 2);
+      context += JSON.stringify(marginData, null, 2);
     } else {
       context += 'No margin data.\n';
     }
