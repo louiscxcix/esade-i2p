@@ -2,8 +2,8 @@ import Papa from 'papaparse';
 import { google } from 'googleapis';
 
 // --- Configuration ---
-const SHEET_ID = '15ZGlivp5_QRf60X7NChILJBLKE8m54_Z9-s0kGxCQZk';
-const GID = '1209787837';
+const SHEET_ID = '1MzKM_86_N0Eaj6IxXn-mjKfNimBW-jpn5fPMJ-nPRPw';
+const GID = '2112800307';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&id=${SHEET_ID}&gid=${GID}`;
 const WORKSHEET_NAME = 'Datos en bruto';
 
