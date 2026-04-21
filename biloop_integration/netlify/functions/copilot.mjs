@@ -37,7 +37,14 @@ export default async (req) => {
       context += 'No margin data.\n';
     }
 
-    const systemPrompt = `You are an AI Co-pilot for an internal invoicing and margin dashboard. You answer questions about the following spreadsheet data:\n\n${context}\n\nHelp the user with data-driven insights. Be concise and format answers in nice markdown.`;
+    const systemPrompt = `You are an AI Co-pilot for the internal Boomerang Invoicing Hub. 
+    You are directly linked to the live Google Sheets dataset (ID: 1MzKM_86_N0Eaj6IxXn-mjKfNimBW-jpn5fPMJ-nPRPw).
+    
+    You have access to the following real-time data:
+    \n\n${context}\n\n
+    Help the user with data-driven insights, calculations, and summaries. 
+    If referencing specific invoices or recruiters, use the exact names from the data. 
+    Be concise and format answers in nice markdown.`;
 
     const selectedModelName = data.model || 'gemini-3-flash-preview';
 
